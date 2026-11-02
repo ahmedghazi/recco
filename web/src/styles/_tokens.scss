@@ -1,134 +1,97 @@
-// ==========================================================================
-// Recco — design tokens
-// Edit the maps below; they are emitted as CSS custom properties on :root,
-// so every partial (and the JS timings) picks them up. Dark mode overrides
-// only what it lists.
-// ==========================================================================
-
-// ---------- colours ----------
-$colors: (
-  bg: #fff,          // page background
-  fg: #333,          // body text
-  strong: #111,      // titles, primary buttons
-  mid: #999,         // metadata, hints
-  line: #e6e6e6,     // hairlines, block borders
-  rule: #ddd,        // input and button borders
-  soft: #f4f4f4,     // placeholders, subtle fills
-  accent: #17ac10,   // "live": people around, Send, hot bubble
-  on-accent: #fff,   // text on the accent colour
-  danger: #c33,      // errors
-  scrim: rgba(0, 0, 0, .25), // behind bottom sheets
-  media-bg: #000,    // behind trailers
-);
-
-$colors-dark: (
-  bg: #111,
-  fg: #ddd,
-  strong: #fff,
-  mid: #777,
-  line: #2a2a2a,
-  rule: #333,
-  soft: #1b1b1b,
-  accent: #3ccf35,
-);
-
-// ---------- type ----------
-$fonts: (
-  font: (Arial, 'Helvetica Neue', Helvetica, sans-serif),
-  mono: (ui-monospace, Menlo, monospace),
-);
-
-$font-sizes: (
-  '2xs': 11px,
-  xs: 12px,
-  s: 13px,
-  m: 14px,
-  base: 15px,
-  input: 16px,  // keep ≥ 16px: iOS zooms into smaller inputs
-  l: 17px,
-  xl: 22px,
-  h2: 26px,     // screen titles
-  h1: 30px,     // menu items, onboarding
-  score: 34px,  // global rating
-);
-
-$type: (
-  lh: 1.45,
-  fw-bold: 700,
-  fw-title: 400, // titles stay regular, Are.na-style
-);
-
-// ---------- space, layout, shape ----------
-$space: (
-  u: 8px,          // base unit
-  gutter: 16px,    // screen side padding
-  max-w: 1100px,   // content width on big screens
-  block-min: 150px, // Saved grid: smallest block width
-  list-min: 160px,  // Lists grid: smallest list width
-);
-
-$radii: (
-  r: 4px,         // buttons, inputs
-  r-s: 3px,       // code, thumbnails
-  r-card: 2px,    // the card that gets sent
-  r-media: 6px,   // players
-  r-sheet: 12px,  // bottom sheets
-  r-pill: 99px,   // chips, pills
-);
-
-$shadows: (
-  shadow-lift: (0 18px 40px -12px rgba(0, 0, 0, .25)),  // pile while dragging
-  shadow-bubble: (0 6px 18px -8px rgba(0, 0, 0, .35)),  // hold-to-send bubbles
-);
-
-// ---------- components ----------
-$components: (
-  hand-w: 250px,   // width of the pile on the Send screen
-  pile-step: 5px,  // offset between stacked cards
-  avatar: 46px,    // people around on the Send screen
-  bubble: 52px,    // hold-to-send bubbles
-);
-
-// ---------- motion (the JS reads the last five) ----------
-$motion: (
-  ease-out: cubic-bezier(.16, 1, .3, 1),
-  ease-spring: cubic-bezier(.2, 1.5, .4, 1),
-  t-fast: .15s,
-  t-mid: .3s,
-  arrive-duration: 1400ms, // one received card falling in
-  arrive-stagger: 280ms,   // delay between received cards
-  banner-duration: 1400ms, // "Tom sent you" banner on screen
-  hold-delay: 280ms,       // press time before the hold-to-send arc opens
-  trail-frames: 3,         // pile trail: frames of lag between two cards
-);
-
-// ---------- emit ----------
-@mixin emit($map, $prefix: '') {
-  @each $key, $value in $map {
-    --#{$prefix}#{$key}: #{$value};
-  }
-}
+/* ==========================================================================
+   Recco — design tokens (plain CSS custom properties)
+   Change a value, save, and the whole app follows. The JS reads the
+   timings at the bottom too. Dark mode overrides only what it lists.
+   ========================================================================== */
 
 :root {
-  @include emit($colors);
-  @include emit($fonts);
-  @include emit($font-sizes, 'fs-');
-  @include emit($type);
-  @include emit($space);
-  @include emit($radii);
-  @include emit($shadows);
-  @include emit($components);
-  @include emit($motion);
+  /* ---------- colours ---------- */
+  --bg: #fff;            /* page background */
+  --fg: #333;            /* body text */
+  --strong: #111;        /* titles, primary buttons */
+  --mid: #999;           /* metadata, hints */
+  --line: #e6e6e6;       /* hairlines, block borders */
+  --rule: #ddd;          /* input and button borders */
+  --soft: #f4f4f4;       /* placeholders, subtle fills */
+  --accent: #17ac10;     /* "live": people around, Send, hot bubble */
+  --on-accent: #fff;     /* text on the accent colour */
+  --danger: #c33;        /* errors */
+  --scrim: rgba(0, 0, 0, .25);   /* behind bottom sheets */
+  --media-bg: #000;      /* behind trailers */
+
+  /* ---------- type ---------- */
+  --font: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  --mono: ui-monospace, Menlo, monospace;
+  --lh: 1.45;
+  --fw-bold: 700;
+  --fw-title: 400;       /* titles stay regular, Are.na-style */
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-s: 13px;
+  --fs-m: 14px;
+  --fs-base: 15px;
+  --fs-input: 16px;      /* keep ≥ 16px: iOS zooms into smaller inputs */
+  --fs-l: 17px;
+  --fs-xl: 22px;
+  --fs-h2: 26px;         /* screen titles */
+  --fs-h1: 30px;         /* menu items, onboarding */
+  --fs-score: 34px;      /* global rating */
+
+  /* ---------- space & layout ---------- */
+  --u: 8px;              /* base unit */
+  --gutter: 16px;        /* screen side padding */
+  --max-w: 1100px;       /* content width on big screens */
+  --block-min: 150px;    /* Saved grid: smallest block width */
+  --list-min: 160px;     /* Lists grid: smallest list width */
+
+  /* ---------- shape ---------- */
+  --r: 4px;              /* buttons, inputs */
+  --r-s: 3px;            /* code, thumbnails */
+  --r-card: 2px;         /* the card that gets sent */
+  --r-media: 6px;        /* players */
+  --r-sheet: 12px;       /* bottom sheets */
+  --r-pill: 99px;        /* chips, pills */
   --border: 1px;
-  // aliases kept for older rules
+
+  /* ---------- depth ---------- */
+  --shadow-lift: 0 18px 40px -12px rgba(0, 0, 0, .25);   /* pile while dragging */
+  --shadow-bubble: 0 6px 18px -8px rgba(0, 0, 0, .35);   /* hold-to-send bubbles */
+
+  /* ---------- components ---------- */
+  --hand-w: 250px;       /* width of the pile on the Send screen */
+  --pile-step: 5px;      /* offset between stacked cards */
+  --avatar: 46px;        /* people around on the Send screen */
+  --bubble: 52px;        /* hold-to-send bubbles */
+
+  /* ---------- motion ---------- */
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-spring: cubic-bezier(.2, 1.5, .4, 1);
+  --t-fast: .15s;
+  --t-mid: .3s;
+  /* read by the JS */
+  --arrive-duration: 1400ms;   /* one received card falling in */
+  --arrive-stagger: 280ms;     /* delay between received cards */
+  --banner-duration: 1400ms;   /* "Tom sent you" banner on screen */
+  --hold-delay: 280ms;         /* press time before the hold-to-send arc opens */
+  --trail-frames: 3;           /* pile trail: frames of lag between two cards */
+
+  /* aliases kept for older rules */
   --green: var(--accent);
   --sans: var(--font);
   color-scheme: light;
 }
 
+/* ---------- dark mode (follows the phone) ---------- */
 @media (prefers-color-scheme: dark) {
   :root {
-    @include emit($colors-dark);
+    --bg: #111;
+    --fg: #ddd;
+    --strong: #fff;
+    --mid: #777;
+    --line: #2a2a2a;
+    --rule: #333;
+    --soft: #1b1b1b;
+    --accent: #3ccf35;
     color-scheme: dark;
   }
 }

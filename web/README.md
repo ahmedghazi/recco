@@ -4,7 +4,7 @@ An installable web app for testing the collect and share gateways before buildin
 
 Design: Are.na-inspired. Styles are SCSS in `src/styles/`:
 
-- `_tokens.scss` — **edit this to customise**: colour maps (light + dark), fonts, font sizes, spacing, radii, shadows, component sizes and motion. The maps are emitted as CSS custom properties on `:root`, so the JS reads the timings too (`--arrive-duration`, `--arrive-stagger`, `--banner-duration`, `--hold-delay`, `--trail-frames`).
+- `_tokens.scss` — **edit this to customise**: plain CSS custom properties on `:root` for colours (light + dark), fonts, font sizes, spacing, radii, shadows, component sizes and motion. The JS reads the timings too (`--arrive-duration`, `--arrive-stagger`, `--banner-duration`, `--hold-delay`, `--trail-frames`).
 - one partial per area: `_base`, `_header`, `_controls`, `_toolbar`, `_blocks`, `_lists`, `_card`, `_send`, `_received`, `_settings`, `_sheets`, `_install`, `_title-page`, `_notify`, `_radial`; `main.scss` loads them in order.
 - `src/style.css` is the old mono/Swiss look, no longer imported.
 
