@@ -20,10 +20,18 @@ type Listener<T> = (v: T) => void
 
 const env = import.meta.env as any
 function relayUrl(): string {
-  if (state.relayUrl) return state.relayUrl
-  if (env.VITE_RELAY_URL) return env.VITE_RELAY_URL
+  const raw = (state.relayUrl || env.VITE_RELAY_URL || '').trim()
   // dev default: relay on the same host, port 8787
-  return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8787`
+  if (!raw) return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8787`
+  return normalizeWs(raw)
+}
+
+/** Accept "recco-relay.fly.dev", "https://…", "ss://…" and the like. */
+function normalizeWs(url: string): string {
+  if (/^wss?:\/\//i.test(url)) return url
+  if (/^http:\/\//i.test(url)) return url.replace(/^http/i, 'ws')
+  const host = url.replace(/^[a-z]*:?\/\//i, '')
+  return `wss://${host}`
 }
 
 let ws: WebSocket | null = null
