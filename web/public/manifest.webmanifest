@@ -1,0 +1,26 @@
+{
+  "name": "Recco",
+  "short_name": "Recco",
+  "description": "Collect films and series, send your Top 5 to friends.",
+  "id": "./",
+  "start_url": "./#/collect",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
+  "file_handlers": [
+    { "action": "./", "accept": { "application/json": [".recco.json"] } }
+  ],
+  "launch_handler": { "client_mode": "focus-existing" }
+}
