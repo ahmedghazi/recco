@@ -460,8 +460,8 @@ function blockHtml(i: LibItem) {
   return `<div class="block-wrap">
     <a class="block ${i.status}" href="#/t/${encodeURIComponent(i.key)}">
       <div class="frame">${posterHtml(i, 'w342')}</div>
-      <div class="bt">${esc(i.title)}</div>
-      <div class="bm2">${globalScore(i.details?.ratings) ? `<span class="sc">★ ${globalScore(i.details?.ratings)!.toFixed(1)}</span> · ` : ''}${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''} · ${from}${i.status === 'watched' ? ` · ${doneWord(i.media)}` : ''}</div>
+      <div class="bt-row"><div class="bt">${esc(i.title)}</div>${globalScore(i.details?.ratings) ? `<span class="bsc">${globalScore(i.details?.ratings)!.toFixed(1)}</span>` : ''}</div>
+      <div class="bm2">${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''} · ${from}${i.status === 'watched' ? ` · ${doneWord(i.media)}` : ''}</div>
     </a>
     <button class="bsend" data-send="${esc(i.key)}" aria-label="Send ${esc(i.title)}">Send</button>
   </div>`
@@ -556,7 +556,10 @@ function renderTitle(key: string) {
           <select id="tpType" aria-label="Type">${MEDIA.map((m) => `<option value="${m.id}" ${(i.media || 'movie') === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}</select>
           ${i.year ? `<span class="muted">${i.year}</span>` : ''}
         </div>
-        <h2 id="tpTitle" contenteditable="true" spellcheck="false" title="Tap to edit">${esc(i.title)}</h2>
+        <div class="tp-head">
+          <h2 id="tpTitle" contenteditable="true" spellcheck="false" title="Tap to edit">${esc(i.title)}</h2>
+          <div id="tpScore">${scoreBadge(i)}</div>
+        </div>
         ${i.recos.length ? `<ul class="recos">${i.recos
           .map((r) => `<li><span class="from">From ${esc(r.from)}${r.origin ? ` / via ${esc(r.origin)}` : ''}</span>${r.note ? `<q>${esc(r.note)}</q>` : ''}</li>`)
           .join('')}</ul>` : ''}
@@ -580,6 +583,7 @@ function renderTitle(key: string) {
     const busy = document.activeElement?.matches('input, textarea, [contenteditable]')
     if (busy) {
       $('#tpMore').innerHTML = moreHtml(i)
+      $('#tpScore').innerHTML = scoreBadge(i)
       wireMore(i)
     } else renderTitle(key)
   })
@@ -634,21 +638,31 @@ function renderTitle(key: string) {
 
 // ---------- title page extras: trailer / player, synopsis, people, images, where to watch ----------
 /** Global score + one chip per source (IMDb, Rotten Tomatoes, Metacritic, TMDB) + Letterboxd link. */
+/** The global score, shown on the right of the title. */
+function scoreBadge(i: LibItem) {
+  const r = i.details?.ratings || []
+  const g = globalScore(r)
+  if (!g) return ''
+  return `<div class="tp-score" title="Average of ${r.map((x) => x.source).join(', ')}"><b>${g.toFixed(1)}</b><span>${r.length} ${r.length === 1 ? 'source' : 'sources'}</span></div>`
+}
+
 function scoresHtml(i: LibItem) {
   if (!isTmdbMedia(i.media || 'movie') || !i.tmdbId) return ''
   const r = i.details?.ratings || []
-  const g = globalScore(r)
+  const q = encodeURIComponent(i.title)
   const lb = i.media !== 'tv' ? (i.imdbId ? `https://letterboxd.com/imdb/${i.imdbId}/` : `https://letterboxd.com/tmdb/${i.tmdbId}/`) : ''
-  const order = ['IMDb', 'Rotten Tomatoes', 'Metacritic', 'TMDB']
-  const chips = [...r]
-    .sort((a, b) => order.indexOf(a.source) - order.indexOf(b.source))
-    .map((x) => `<a class="src" href="${esc(x.url || '#')}" target="_blank" rel="noopener"><span>${x.source}</span><b>${esc(x.value)}</b></a>`)
-  if (lb) chips.push(`<a class="src" href="${lb}" target="_blank" rel="noopener"><span>Letterboxd</span><b>↗</b></a>`)
-  if (!g && !chips.length) return ''
-  return `<div class="scores">
-    ${g ? `<div class="global"><b>${g.toFixed(1)}</b><span>global<br>${r.length} ${r.length === 1 ? 'source' : 'sources'}</span></div>` : ''}
-    <div class="srcs">${chips.join('')}</div>
-  </div>
+  const chip = (source: string, value: string, url: string) =>
+    `<a class="src" href="${esc(url)}" target="_blank" rel="noopener"><span>${source}</span><b>${esc(value)}</b></a>`
+  const find = (src: string) => r.find((x) => x.source === src)
+  // fixed order; a source without a score still shows as a link
+  const chips = [
+    find('IMDb') ? chip('IMDb', find('IMDb')!.value, find('IMDb')!.url!) : i.imdbId ? chip('IMDb', '↗', `https://www.imdb.com/title/${i.imdbId}/`) : '',
+    find('Rotten Tomatoes') ? chip('Rotten Tomatoes', find('Rotten Tomatoes')!.value, find('Rotten Tomatoes')!.url!) : chip('Rotten Tomatoes', '↗', `https://www.rottentomatoes.com/search?search=${q}`),
+    find('Metacritic') ? chip('Metacritic', find('Metacritic')!.value, find('Metacritic')!.url!) : '',
+    find('TMDB') ? chip('TMDB', find('TMDB')!.value, find('TMDB')!.url!) : '',
+    lb ? chip('Letterboxd', '↗', lb) : '',
+  ].filter(Boolean)
+  return `<div class="scores"><div class="srcs">${chips.join('')}</div></div>
   ${!hasOmdb() && i.details ? '<p class="muted small">Add an OMDb key in Settings for IMDb, Rotten Tomatoes and Metacritic.</p>' : ''}`
 }
 

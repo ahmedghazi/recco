@@ -38,10 +38,13 @@
 .shots img { flex: none; height: 150px; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--r-s); scroll-snap-align: start; background: var(--soft); }
 
 /* ratings */
-.scores { display: flex; gap: 16px; align-items: center; margin: 0 0 16px; flex-wrap: wrap; }
-.global { display: flex; align-items: center; gap: 8px; }
-.global b { font-size: var(--fs-score); font-weight: var(--fw-title); color: var(--strong); line-height: 1; }
-.global span { font-size: var(--fs-2xs); line-height: 1.2; color: var(--mid); }
+.scores { margin: 0 0 16px; }
+/* title + global score on its right */
+.tp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.tp-head h2 { flex: 1; min-width: 0; }
+.tp-score { flex: none; display: flex; flex-direction: column; align-items: flex-end; line-height: 1; padding-top: 2px; }
+.tp-score b { font-size: var(--fs-score); font-weight: var(--fw-title); color: var(--strong); }
+.tp-score span { font-size: var(--fs-2xs); color: var(--mid); margin-top: 4px; }
 .srcs { display: flex; flex-wrap: wrap; gap: 6px; }
 .src { display: inline-flex; gap: 6px; align-items: baseline; text-decoration: none; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 4px 10px; font-size: var(--fs-xs); }
 .src span { color: var(--mid); }

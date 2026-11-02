@@ -27,3 +27,8 @@
 .bsend { position: absolute; right: 8px; top: 8px; padding: 4px 10px; font-size: var(--fs-xs); border-radius: var(--r-pill); background: var(--bg); color: var(--green); border: 1px solid var(--green); opacity: .95; }
 .bsend:active { background: var(--green); color: var(--on-accent); }
 .block .bm2 .sc { color: var(--strong); }
+
+/* title + global score on its right */
+.block .bt-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.block .bt-row .bt { min-width: 0; }
+.block .bsc { flex: none; font-size: var(--fs-m); color: var(--strong); }
