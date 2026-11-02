@@ -46,7 +46,18 @@ export interface Details {
   providers?: { name: string; logo?: string }[]
   watchLink?: string
   author?: string // artist, channel, show…
+  ratings?: Rating[]
+  v?: number // details format version: bump to refetch
   fetchedAt: string
+}
+
+/** One score from one source, normalised to /10 for the global score. */
+export interface Rating {
+  source: 'TMDB' | 'IMDb' | 'Rotten Tomatoes' | 'Metacritic'
+  value: string // as the source shows it: "7.8", "96%", "94"
+  outOf10: number
+  votes?: number
+  url?: string
 }
 
 export interface Reco {
@@ -101,6 +112,7 @@ interface State {
   library: Record<string, LibItem>
   lists: List[]
   tmdbToken: string
+  omdbKey: string // omdbapi.com: IMDb, Rotten Tomatoes, Metacritic
   log: GatewayEvent[]
 }
 
@@ -126,7 +138,7 @@ function newId() {
 }
 
 function blank(): State {
-  return { me: { id: newId(), name: '' }, friends: {}, visible: 'network', relayUrl: '', library: {}, lists: [], tmdbToken: '', log: [] }
+  return { me: { id: newId(), name: '' }, friends: {}, visible: 'network', relayUrl: '', library: {}, lists: [], tmdbToken: '', omdbKey: '', log: [] }
 }
 
 export const state: State = load()

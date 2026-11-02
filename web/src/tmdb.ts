@@ -63,7 +63,7 @@ export const poster = (path?: string, size = 'w342') => (path ? `${IMG}${size}${
 /** Everything the title page shows: synopsis, people, trailer, images, where to watch (France). */
 export async function fullDetails(media: Media, id: number): Promise<Details & { imdbId?: string }> {
   const d = await get(`/${media}/${id}`, {
-    append_to_response: 'videos,images,credits,watch/providers',
+    append_to_response: 'videos,images,credits,watch/providers,external_ids',
     include_image_language: 'fr,en,null',
     include_video_language: 'fr,en,null',
   })
@@ -93,7 +93,11 @@ export async function fullDetails(media: Media, id: number): Promise<Details & {
     trailer,
     providers,
     watchLink: fr?.link,
-    imdbId: d.imdb_id || undefined,
+    imdbId: d.imdb_id || d.external_ids?.imdb_id || undefined,
+    ratings: d.vote_count
+      ? [{ source: 'TMDB', value: (Math.round(d.vote_average * 10) / 10).toFixed(1), outOf10: d.vote_average, votes: d.vote_count, url: `https://www.themoviedb.org/${media}/${id}` }]
+      : [],
+    v: 2,
     fetchedAt: new Date().toISOString(),
   }
 }

@@ -11,6 +11,7 @@ import { attachFling, flyIn, pickTarget, type Vec } from './fling'
 import { relay, addFriend, type IncomingHand, type Peer } from './relay'
 import { askNotify, banner, closeOverlay, notifyState, pushOverlay, systemNotify } from './notify'
 import { enrich, playerFor } from './enrich'
+import { globalScore, hasOmdb } from './omdb'
 
 const app = document.getElementById('app')!
 const esc = (s: unknown) =>
@@ -435,7 +436,7 @@ async function importCsv(f: File) {
 }
 
 // Saved: an Are.na-style grid of blocks, with search, type filter and sort
-const savedView = { q: '', type: '' as '' | Media, sort: 'recent' as 'recent' | 'title' | 'year' | 'from' }
+const savedView = { q: '', type: '' as '' | Media, sort: 'recent' as 'recent' | 'rating' | 'title' | 'year' | 'from' }
 
 function sortItems(items: LibItem[], sort: string) {
   const by = {
@@ -443,6 +444,7 @@ function sortItems(items: LibItem[], sort: string) {
     title: (a: LibItem, b: LibItem) => a.title.localeCompare(b.title),
     year: (a: LibItem, b: LibItem) => (b.year || 0) - (a.year || 0),
     from: (a: LibItem, b: LibItem) => (a.recos[0]?.from || '~').localeCompare(b.recos[0]?.from || '~'),
+    rating: (a: LibItem, b: LibItem) => (globalScore(b.details?.ratings) ?? -1) - (globalScore(a.details?.ratings) ?? -1),
   }[sort] || (() => 0)
   return [...items].sort(by)
 }
@@ -459,7 +461,7 @@ function blockHtml(i: LibItem) {
     <a class="block ${i.status}" href="#/t/${encodeURIComponent(i.key)}">
       <div class="frame">${posterHtml(i, 'w342')}</div>
       <div class="bt">${esc(i.title)}</div>
-      <div class="bm2">${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''} · ${from}${i.status === 'watched' ? ` · ${doneWord(i.media)}` : ''}</div>
+      <div class="bm2">${globalScore(i.details?.ratings) ? `<span class="sc">★ ${globalScore(i.details?.ratings)!.toFixed(1)}</span> · ` : ''}${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''} · ${from}${i.status === 'watched' ? ` · ${doneWord(i.media)}` : ''}</div>
     </a>
     <button class="bsend" data-send="${esc(i.key)}" aria-label="Send ${esc(i.title)}">Send</button>
   </div>`
@@ -478,7 +480,7 @@ function renderInbox() {
       <div class="toolbar">
         <input type="search" id="q" placeholder="Search titles, people, notes" value="${esc(savedView.q)}" autocomplete="off">
         <select id="sort" aria-label="Sort">
-          <option value="recent">Recent</option><option value="title">Title</option><option value="year">Year</option><option value="from">From</option>
+          <option value="recent">Recent</option><option value="rating">Rating</option><option value="title">Title</option><option value="year">Year</option><option value="from">From</option>
         </select>
       </div>
       ${types.length > 1 ? `<div class="chips" id="types"><button data-type="" class="${savedView.type ? '' : 'on'}">All types</button>${types
@@ -623,6 +625,25 @@ function renderTitle(key: string) {
 }
 
 // ---------- title page extras: trailer / player, synopsis, people, images, where to watch ----------
+/** Global score + one chip per source (IMDb, Rotten Tomatoes, Metacritic, TMDB) + Letterboxd link. */
+function scoresHtml(i: LibItem) {
+  if (!isTmdbMedia(i.media || 'movie') || !i.tmdbId) return ''
+  const r = i.details?.ratings || []
+  const g = globalScore(r)
+  const lb = i.media !== 'tv' ? (i.imdbId ? `https://letterboxd.com/imdb/${i.imdbId}/` : `https://letterboxd.com/tmdb/${i.tmdbId}/`) : ''
+  const order = ['IMDb', 'Rotten Tomatoes', 'Metacritic', 'TMDB']
+  const chips = [...r]
+    .sort((a, b) => order.indexOf(a.source) - order.indexOf(b.source))
+    .map((x) => `<a class="src" href="${esc(x.url || '#')}" target="_blank" rel="noopener"><span>${x.source}</span><b>${esc(x.value)}</b></a>`)
+  if (lb) chips.push(`<a class="src" href="${lb}" target="_blank" rel="noopener"><span>Letterboxd</span><b>↗</b></a>`)
+  if (!g && !chips.length) return ''
+  return `<div class="scores">
+    ${g ? `<div class="global"><b>${g.toFixed(1)}</b><span>global<br>${r.length} ${r.length === 1 ? 'source' : 'sources'}</span></div>` : ''}
+    <div class="srcs">${chips.join('')}</div>
+  </div>
+  ${!hasOmdb() && i.details ? '<p class="muted small">Add an OMDb key in Settings for IMDb, Rotten Tomatoes and Metacritic.</p>' : ''}`
+}
+
 /** watched / listened / read, depending on the type */
 const doneWord = (m?: string) => (m === 'music' || m === 'podcast' ? 'listened' : m === 'book' || m === 'article' ? 'read' : 'watched')
 
@@ -642,6 +663,7 @@ function moreHtml(i: LibItem) {
   } else if (player) {
     out.push(`<iframe class="player${player.height ? '' : ' wide'}" src="${esc(player.src)}" ${player.height ? `height="${player.height}"` : ''} loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" title="Player"></iframe>`)
   }
+  out.push(scoresHtml(i))
   if (d?.tagline) out.push(`<p class="tagline">${esc(d.tagline)}</p>`)
   if (d?.overview) out.push(`<p class="overview">${esc(d.overview)}</p>`)
   const facts: [string, string | undefined][] = [
@@ -1131,6 +1153,7 @@ function renderGateways() {
         ${row('Clipboard read', support.clipboardRead(), ios ? 'iOS asks each time' : '')}
         ${row('Compressed links', support.compression(), 'shorter links & QR')}
         ${row('TMDB search', hasTmdb(), hasTmdb() ? '' : 'add a key below')}
+        ${row('Ratings (IMDb, RT, Metacritic)', hasOmdb(), hasOmdb() ? 'via OMDb' : 'add an OMDb key below')}
         ${row('Notifications', notifyState() === 'granted', notifyState() === 'unsupported' ? (ios ? 'add to home screen first' : 'not supported here') : notifyState() === 'denied' ? 'blocked in settings' : notifyState() === 'granted' ? 'when the app is in the background' : 'tap “Turn on notifications” below')}
         ${row('Relay (nearby)', relay.status === 'on', relay.status === 'on' ? `${relay.peers.length} around · network ${relay.net || '…'} (same wifi = same 4 characters)` : 'not connected')}
       </table>
@@ -1148,6 +1171,8 @@ function renderGateways() {
         <label>Relay URL <input name="relay" value="${esc(state.relayUrl)}" placeholder="default: ws://${esc(location.hostname)}:8787" autocomplete="off"></label>
         <label>TMDB API key or read access token
           <input name="tmdb" value="${esc(state.tmdbToken)}" placeholder="themoviedb.org → Settings → API" autocomplete="off"></label>
+        <label>OMDb API key (IMDb, Rotten Tomatoes, Metacritic)
+          <input name="omdb" value="${esc(state.omdbKey)}" placeholder="free at omdbapi.com/apikey.aspx" autocomplete="off"></label>
         <button>Save</button>
       </form>
       <p class="muted small">This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
@@ -1182,6 +1207,7 @@ function renderGateways() {
     const fd = new FormData(e.target as HTMLFormElement)
     state.me.name = String(fd.get('name')).trim()
     state.tmdbToken = String(fd.get('tmdb')).trim()
+    state.omdbKey = String(fd.get('omdb') || '').trim()
     state.visible = fd.get('visible') === 'friends' ? 'friends' : 'network'
     const newRelay = String(fd.get('relay') || '').trim()
     const relayChanged = newRelay !== state.relayUrl

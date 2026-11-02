@@ -251,3 +251,4 @@ q::before { content: '“'; } q::after { content: '”'; }
 .block-wrap { position: relative; }
 .bsend { position: absolute; right: 8px; top: 8px; padding: 4px 10px; font-size: 12px; border-radius: 99px; background: var(--bg); color: var(--green); border: 1px solid var(--green); opacity: .95; }
 .bsend:active { background: var(--green); color: #fff; }
+.block .bm2 .sc { color: var(--strong); }

@@ -34,3 +34,13 @@
 .prov img { width: 22px; height: 22px; border-radius: 50%; }
 .shots { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 0 16px 8px; scrollbar-width: none; }
 .shots img { flex: none; height: 150px; aspect-ratio: 16/9; object-fit: cover; border-radius: 3px; scroll-snap-align: start; background: var(--soft); }
+
+/* ratings */
+.scores { display: flex; gap: 16px; align-items: center; margin: 0 0 16px; flex-wrap: wrap; }
+.global { display: flex; align-items: center; gap: 8px; }
+.global b { font-size: 34px; font-weight: 400; color: var(--strong); line-height: 1; }
+.global span { font-size: 11px; line-height: 1.2; color: var(--mid); }
+.srcs { display: flex; flex-wrap: wrap; gap: 6px; }
+.src { display: inline-flex; gap: 6px; align-items: baseline; text-decoration: none; border: 1px solid var(--line); border-radius: 99px; padding: 4px 10px; font-size: 12px; }
+.src span { color: var(--mid); }
+.src b { font-weight: 700; color: var(--strong); }

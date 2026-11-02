@@ -1,18 +1,27 @@
 // Title page extras: TMDB details for films/series, players + artwork for everything else.
 import { isTmdbMedia, save, type LibItem } from './store'
 import { fullDetails, hasTmdb } from './tmdb'
+import { hasOmdb, omdbRatings } from './omdb'
 
 const STALE_MS = 1000 * 60 * 60 * 24 * 14 // refetch after two weeks
 
 /** Fetch and store details once. Resolves true when something new was added. */
 export async function enrich(i: LibItem): Promise<boolean> {
-  if (i.details && Date.now() - Date.parse(i.details.fetchedAt) < STALE_MS) return false
+  const film = !!i.tmdbId && isTmdbMedia(i.media) && hasTmdb()
+  const fresh = i.details && Date.now() - Date.parse(i.details.fetchedAt) < STALE_MS
+  // films fetched before ratings existed (v < 2) get refetched once
+  if (fresh && (!film || i.details!.v === 2)) {
+    // ratings can still be added later, once an OMDb key is set
+    if (film && hasOmdb() && i.imdbId && !i.details!.ratings?.some((r) => r.source === 'IMDb')) return addOmdb(i)
+    return false
+  }
   try {
-    if (i.tmdbId && isTmdbMedia(i.media) && hasTmdb()) {
-      const { imdbId, ...d } = await fullDetails(i.media, i.tmdbId)
+    if (film) {
+      const { imdbId, ...d } = await fullDetails(i.media as 'movie' | 'tv', i.tmdbId!)
       i.details = d
       if (imdbId && !i.imdbId) i.imdbId = imdbId
       save()
+      if (hasOmdb() && i.imdbId) await addOmdb(i)
       return true
     }
     if (i.link) {
@@ -30,6 +39,18 @@ export async function enrich(i: LibItem): Promise<boolean> {
     console.warn('enrich', e)
   }
   return false
+}
+
+async function addOmdb(i: LibItem): Promise<boolean> {
+  try {
+    const extra = await omdbRatings(i.imdbId!)
+    if (!extra.length || !i.details) return false
+    i.details.ratings = [...(i.details.ratings || []).filter((r) => r.source === 'TMDB'), ...extra]
+    save()
+    return true
+  } catch {
+    return false
+  }
 }
 
 /** Title, author and thumbnail for most media links (noembed proxies oEmbed with CORS). */
