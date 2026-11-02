@@ -1,0 +1,11 @@
+/* Title page: one film / series / podcast, with Send as the main action */
+.tpage { display: grid; gap: calc(var(--u) * 3); }
+.tp-card { width: min(200px, 55vw); }  /* small enough that Send stays on screen */
+.tp-meta h2 { margin-bottom: calc(var(--u) * 2); }
+.tp-meta label { margin-top: calc(var(--u) * 2); }
+.tp-meta .acts { margin-top: calc(var(--u) * 2); }
+.recos { list-style: none; padding: 0; border-top: 1px solid var(--rule); }
+.recos li { padding: var(--u) 0; border-bottom: 1px solid var(--soft); }
+.tlink { text-decoration: none; }
+.ext { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; text-decoration: none; border: 1px solid var(--rule); padding: 4px 8px; }
+@media (min-width: 640px) { .tpage { grid-template-columns: 260px 1fr; align-items: start; } .tp-card { width: 260px; } }

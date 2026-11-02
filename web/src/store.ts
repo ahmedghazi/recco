@@ -29,6 +29,7 @@ export interface LibItem extends Title {
   addedAt: string
   source: string // search, paste, share-target, csv:letterboxd, csv:imdb, received…
   recos: Reco[]
+  myNote?: string // my own line, sent along when I pass it on
 }
 
 export interface ListItem {
@@ -37,6 +38,7 @@ export interface ListItem {
 }
 
 export interface List {
+  single?: boolean // one title sent on its own, not a saved list
   id: string
   name: string
   topN?: number

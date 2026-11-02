@@ -1,6 +1,7 @@
 import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/600.css'
 import './style.css'
+import './title-page.css'
 import { APP_NAME } from './config'
 import { addToLibrary, libraryList, logGateway, now, onChange, save, state, uid, type LibItem, type List, type Title } from './store'
 import { hasTmdb, poster, search } from './tmdb'
@@ -31,6 +32,7 @@ function posterHtml(t: Pick<Title, 'title' | 'poster' | 'year'>, size = 'w342') 
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
+const titles = (n: number) => `${pad(n)} ${n === 1 ? 'title' : 'titles'}`
 const mediaLabel = (m?: string) => (m === 'tv' ? 'Series' : m === 'podcast' ? 'Podcast' : m === 'music' ? 'Music' : 'Film')
 
 interface CardData {
@@ -238,11 +240,14 @@ function renderCollect() {
       box.onclick = (ev) => {
         const b = (ev.target as HTMLElement).closest<HTMLElement>('[data-i]')
         if (!b) return
-        const it = addToLibrary(res[Number(b.dataset.i)], 'search')
+        const r = res[Number(b.dataset.i)]
+        // second tap on a saved result opens its page (send from there)
+        if (b.classList.contains('added')) return (location.hash = `#/t/${encodeURIComponent(r.key)}`)
+        const it = addToLibrary(r, 'search')
         save()
         logGateway('search', it.title)
         b.classList.add('added')
-        toast(`Saved · ${it.title}`)
+        toast(`Saved · ${it.title} · tap again to open`)
       }
     } catch (err) {
       box.innerHTML = `<p class="err">TMDB error — check your key in Gateways. (${esc((err as Error).message)})</p>`
@@ -315,9 +320,9 @@ function renderInbox() {
     ${shown.length ? `<ul class="lib">${shown
       .map(
         (i) => `<li data-k="${esc(i.key)}" class="${i.status}">
-          ${posterHtml(i, 'w154')}
+          <a href="#/t/${encodeURIComponent(i.key)}">${posterHtml(i, 'w154')}</a>
           <div class="meta">
-            <b>${esc(i.title)}</b> <span class="muted">${i.year ?? ''}${i.media === 'tv' ? ' · series' : ''}</span>
+            <a class="tlink" href="#/t/${encodeURIComponent(i.key)}"><b>${esc(i.title)}</b></a> <span class="muted">${i.year ?? ''}${i.media === 'tv' ? ' · series' : ''}</span>
             ${fromLine(i)}
             ${i.recos.filter((r) => r.note).map((r) => `<q>${esc(r.note)}</q>`).join('')}
             ${i.resolved ? '' : `<span class="pill">unresolved${i.link ? ` · <a href="${esc(i.link)}" target="_blank" rel="noopener">link</a>` : ''}</span>`}
@@ -325,6 +330,7 @@ function renderInbox() {
               ${i.status === 'watched'
                 ? `<span class="stars">${[2, 4, 6, 8, 10].map((n) => `<button data-rate="${n}">${(i.rating || 0) >= n ? '■' : '□'}</button>`).join('')}</span>`
                 : '<button data-act="watched" class="ghost sm">Mark watched</button>'}
+              <button data-act="send" class="sm">Send</button>
               <button data-act="del" class="ghost sm">Remove</button>
             </div>
           </div>
@@ -337,6 +343,10 @@ function renderInbox() {
     const li = t.closest<HTMLElement>('li')
     if (!li) return
     const item = state.library[li.dataset.k!]
+    if (t.dataset.act === 'send') {
+      // one title, no list needed: a throwaway single-item list that is never saved
+      return openFling({ id: 'single', name: item.title, items: [{ key: item.key, note: item.myNote }], createdAt: now(), single: true })
+    }
     if (t.dataset.act === 'watched') {
       item.status = 'watched'
       // MVP: with a backend this pings every sender ("Tom watched your pick")
@@ -348,6 +358,70 @@ function renderInbox() {
       state.lists.forEach((l) => (l.items = l.items.filter((x) => x.key !== item.key)))
     }
     save()
+  })
+}
+
+// ---------- title page: one film / series / podcast, send it from here ----------
+function sourceLink(i: LibItem): string | undefined {
+  if (i.link) return i.link
+  if (i.tmdbId && i.media) return `https://www.themoviedb.org/${i.media}/${i.tmdbId}`
+  if (i.imdbId) return `https://www.imdb.com/title/${i.imdbId}/`
+  if (i.lbSlug) return `https://letterboxd.com/film/${i.lbSlug}/`
+  return undefined
+}
+
+function renderTitle(key: string) {
+  const i = state.library[key]
+  if (!i) return (location.hash = '#/inbox')
+  const link = sourceLink(i)
+  shell('inbox', `
+    <a href="#/inbox" class="back">← Saved</a>
+    <div class="tpage">
+      <div class="tp-card">${cardHtml({ title: i.title, year: i.year, media: i.media, poster: i.poster, note: i.myNote || i.recos.find((r) => r.note)?.note, from: i.recos[0]?.from || state.me.name, origin: i.recos[0]?.origin })}</div>
+      <div class="tp-meta">
+        <p class="eyebrow">${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''}</p>
+        <h2>${esc(i.title)}</h2>
+        ${i.recos.length ? `<ul class="recos">${i.recos
+          .map((r) => `<li><span class="from">From ${esc(r.from)}${r.origin ? ` / via ${esc(r.origin)}` : ''}</span>${r.note ? `<q>${esc(r.note)}</q>` : ''}</li>`)
+          .join('')}</ul>` : ''}
+        <label>Your line, sent with it
+          <input id="tpNote" maxlength="140" placeholder="One line: why watch it?" value="${esc(i.myNote)}"></label>
+        <button id="tpSend" class="big wide">Send</button>
+        <div class="acts">
+          ${i.status === 'watched'
+            ? `<span class="stars">${[2, 4, 6, 8, 10].map((n) => `<button data-rate="${n}">${(i.rating || 0) >= n ? '■' : '□'}</button>`).join('')}</span>`
+            : '<button data-act="watched" class="ghost sm">Mark watched</button>'}
+          ${link ? `<a class="ext" href="${esc(link)}" target="_blank" rel="noopener">Open source ↗</a>` : ''}
+          <button data-act="del" class="ghost sm">Remove</button>
+        </div>
+      </div>
+    </div>`)
+
+  $('#tpNote').addEventListener('change', (e) => {
+    i.myNote = (e.target as HTMLInputElement).value.trim() || undefined
+    save()
+  })
+  $('#tpSend').addEventListener('click', () => {
+    i.myNote = $<HTMLInputElement>('#tpNote').value.trim() || undefined
+    save()
+    openFling({ id: 'single', name: i.title, items: [{ key: i.key, note: i.myNote }], createdAt: now(), single: true })
+  })
+  $('.tp-meta .acts').addEventListener('click', (e) => {
+    const t = e.target as HTMLElement
+    if (t.dataset.act === 'watched') {
+      i.status = 'watched'
+      if (i.recos.length) toast(`${i.recos.map((r) => r.from).join(', ')} would get a ping`)
+    }
+    if (t.dataset.rate) i.rating = Number(t.dataset.rate)
+    if (t.dataset.act === 'del') {
+      delete state.library[i.key]
+      state.lists.forEach((l) => (l.items = l.items.filter((x) => x.key !== i.key)))
+      location.hash = '#/inbox'
+    }
+    if (t.dataset.act || t.dataset.rate) {
+      save()
+      if (t.dataset.act !== 'del') renderTitle(key)
+    }
   })
 }
 
@@ -459,7 +533,7 @@ async function openFling(l: List) {
   const stage = document.createElement('div')
   stage.className = 'stage'
   stage.innerHTML = `
-    <div class="stage-top"><span>${esc(l.name)}</span><span>${pad(l.items.length)} titles</span><button class="x" aria-label="Close">Close</button></div>
+    <div class="stage-top"><span>${esc(l.name)}</span><span>${titles(l.items.length)}</span><button class="x" aria-label="Close">Close</button></div>
     <div class="around">
       <div class="around-head"><span>Around</span><button class="codebtn" data-a="code">Code</button></div>
       <div class="peers" id="peers"></div>
@@ -600,13 +674,13 @@ function renderReceived(p: Payload, channel: string) {
   const mine = p.from === state.me.name
   shell('', `
     <section class="received">
-      <p class="eyebrow">${esc(p.from)} sent you ${pad(p.items.length)} titles</p>
+      <p class="eyebrow">${esc(p.from)} sent you ${titles(p.items.length)}</p>
       <h2>${esc(p.list.name)}</h2>
       <div class="row-cards" id="incoming">${p.items
         .map((it, i) => `<div class="rc">${cardHtml({ title: it.t, year: it.y, media: it.m, poster: it.p, note: it.n, from: p.from, origin: it.o, rank: p.list.topN ? i + 1 : undefined, total: p.items.length, rarity: it.o ? 2 : 1 })}</div>`)
         .join('')}</div>
       ${mine ? '<p class="muted">Your own list. This is what your friends see.</p>' : ''}
-      <button id="keep" class="big wide">Save all ${pad(p.items.length)}</button>
+      <button id="keep" class="big wide">${p.items.length === 1 ? 'Save' : `Save all ${pad(p.items.length)}`}</button>
       <p class="muted">Every card stays signed by ${esc(p.from)}.</p>
     </section>`)
   app.querySelectorAll<HTMLElement>('#incoming .rc').forEach((el, i) => setTimeout(() => flyIn(el), i * 90))
@@ -624,6 +698,7 @@ function renderReceived(p: Payload, channel: string) {
 /** Save a received list: every title keeps who it's from, the sender becomes a friend. */
 function keepPayload(p: Payload, channel: string, ref = '') {
   const list: List = { id: uid(), name: p.list.name, topN: p.list.topN, items: [], createdAt: now(), from: p.from }
+  const single = !!p.list.single || p.items.length === 1
   for (const it of p.items) {
     const item = addToLibrary(
       { title: it.t, year: it.y, media: it.m, tmdbId: it.i, imdbId: it.im, poster: it.p, resolved: !!it.i },
@@ -632,7 +707,8 @@ function keepPayload(p: Payload, channel: string, ref = '') {
     )
     list.items.push({ key: item.key, note: it.n })
   }
-  state.lists.unshift(list)
+  // a single title goes straight to Saved; only real lists show up under Lists
+  if (!single) state.lists.unshift(list)
   save()
   logGateway('keep', `${p.items.length} titles from ${p.from}`)
   if (p.fid && p.fid !== state.me.id) {
@@ -653,7 +729,7 @@ function showIncoming(m: IncomingHand) {
   const ov = document.createElement('div')
   ov.className = 'stage incoming-ov'
   ov.innerHTML = `
-    <div class="stage-top"><span>From ${esc(m.from.name)}</span><span>${pad(p.items.length)} titles</span><button class="x">Close</button></div>
+    <div class="stage-top"><span>From ${esc(m.from.name)}</span><span>${titles(p.items.length)}</span><button class="x">Close</button></div>
     <div class="ov-body">
       <p class="eyebrow">${esc(m.from.name)} sent you</p>
       <h2>${esc(p.list.name)}</h2>
@@ -662,7 +738,7 @@ function showIncoming(m: IncomingHand) {
         .join('')}</div>
       ${friend
         ? `<p class="muted">Saved.</p><button class="big wide" data-a="open">Open saved</button>`
-        : `<div class="row"><button class="big" data-a="keep">Save all</button><button class="ghost big" data-a="decline">Decline</button></div><p class="muted">Saving makes ${esc(m.from.name)} a friend: next time, titles arrive directly.</p>`}
+        : `<div class="row"><button class="big" data-a="keep">${p.items.length === 1 ? 'Save' : 'Save all'}</button><button class="ghost big" data-a="decline">Decline</button></div><p class="muted">Saving makes ${esc(m.from.name)} a friend: next time, titles arrive directly.</p>`}
     </div>`
   document.body.append(ov)
   ov.querySelectorAll<HTMLElement>('.rc').forEach((el, i) => setTimeout(() => flyIn(el), i * 90))
@@ -799,6 +875,7 @@ async function render() {
   if (needName()) return
   if (screen === 'lists') return renderLists()
   if (screen === 'list' && a) return renderList(a)
+  if (screen === 't' && a) return renderTitle(decodeURIComponent(a))
   if (screen === 'inbox') return renderInbox()
   if (screen === 'gateways') return renderGateways()
   return renderCollect()
@@ -807,7 +884,8 @@ async function render() {
 // Re-render on data change, except while a receive screen or the fling stage is open
 onChange(() => {
   const r = route()[0]
-  if (r === 'r' || r === 'collect' || r === '' || document.querySelector('.stage')) return
+  // the title page re-renders itself; re-rendering on its note's blur would swallow the Send tap
+  if (r === 'r' || r === 't' || r === 'collect' || r === '' || document.querySelector('.stage')) return
   const focused = document.activeElement as HTMLElement | null
   if (focused?.matches('input, textarea, [contenteditable]')) return
   render()

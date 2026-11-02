@@ -17,7 +17,7 @@ export interface Payload {
   v: 1
   from: string
   fid?: string // sender device id → becomes a friend on keep
-  list: { name: string; topN?: number }
+  list: { name: string; topN?: number; single?: boolean }
   items: PayloadItem[]
 }
 
@@ -26,7 +26,7 @@ export function buildPayload(list: List): Payload {
     v: 1,
     from: state.me.name || 'A friend',
     fid: state.me.id,
-    list: { name: list.name, topN: list.topN },
+    list: { name: list.name, topN: list.topN, single: list.single || undefined },
     items: list.items
       .map((li) => {
         const t = state.library[li.key]
