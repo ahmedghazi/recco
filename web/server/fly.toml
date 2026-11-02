@@ -1,0 +1,18 @@
+# Deploy from this folder: fly deploy --ha=false
+# One machine only: the relay keeps who's online in memory.
+app = "recco-relay"
+primary_region = "cdg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"   # sleeps when nobody is connected
+  auto_start_machines = true    # wakes on the next connection (~1–2 s)
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
