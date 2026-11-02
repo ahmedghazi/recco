@@ -8,6 +8,8 @@ export function attachFling(
   card: HTMLElement,
   onFling: (dir: Vec) => void,
   onAim?: (dir: Vec | null) => void,
+  /** live drag offset (null on release, with whether it was flung) — lets the pile trail behind */
+  onDrag?: (pos: Vec | null, flung?: boolean) => void,
 ) {
   let startX = 0, startY = 0, x = 0, y = 0, lastX = 0, lastY = 0, lastT = 0, vx = 0, vy = 0, active = false
 
@@ -35,6 +37,7 @@ export function attachFling(
     lastX = e.clientX; lastY = e.clientY; lastT = e.timeStamp
     setT(x, Math.min(y, 40) + (y > 40 ? (y - 40) * 0.2 : 0), 'scale(1.03)')
     onAim?.(y < -20 ? { x, y } : null)
+    onDrag?.({ x, y })
   })
 
   const end = () => {
@@ -46,6 +49,7 @@ export function attachFling(
       // direction = blend of drag offset and release velocity
       const dir = { x: x + vx * 120, y: Math.min(-1, y + vy * 120) }
       onFling(dir)
+      onDrag?.(null, true)
       navigator.vibrate?.([12, 30, 18])
       const k = (window.innerHeight * 1.1) / Math.abs(dir.y)
       card.style.transition = 'transform .45s cubic-bezier(.2,.7,.2,1), opacity .45s'
@@ -62,6 +66,7 @@ export function attachFling(
       }, 900)
     } else {
       onAim?.(null)
+      onDrag?.(null, false)
       card.style.transition = 'transform .4s cubic-bezier(.2,1.4,.4,1)'
       setT(0, 0)
     }

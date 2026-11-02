@@ -858,6 +858,26 @@ function renderList(id: string) {
 }
 
 // ---------- the fling stage ----------
+/** While dragging, the cards under the top one lag behind and fan out; on release they catch up one by one. */
+function staggerPile(hand: HTMLElement, pos: Vec | null, flung = false) {
+  const cards = Array.from(hand.querySelectorAll<HTMLElement>('.hc')).reverse() // 0 = top card
+  cards.forEach((el, k) => {
+    if (!pos) {
+      el.style.transitionDelay = `${k * (flung ? 55 : 30)}ms`
+      el.style.setProperty('--dx', '0px')
+      el.style.setProperty('--dy', '0px')
+      el.style.setProperty('--rot', '0deg')
+      return
+    }
+    el.style.transitionDelay = `${k * 12}ms`
+    const lag = Math.min(0.7, k * 0.18)
+    const rot = Math.max(-14, Math.min(14, (-pos.x / 25) * k + (pos.y < 0 ? k * 1.2 * Math.sign(pos.x || 1) : 0)))
+    el.style.setProperty('--dx', `${-pos.x * lag}px`)
+    el.style.setProperty('--dy', `${-pos.y * lag}px`)
+    el.style.setProperty('--rot', `${rot}deg`)
+  })
+}
+
 async function openFling(l: List) {
   const url = await shareUrl(l, 'fling')
   const cards = l.items
@@ -947,6 +967,7 @@ async function openFling(l: List) {
       const t = dir ? pickTarget(hand, els, dir) : null
       els.forEach((el) => el.classList.toggle('aim', el === t))
     },
+    (pos, flung) => staggerPile(hand, pos, flung),
   )
 
   const close = () => {
