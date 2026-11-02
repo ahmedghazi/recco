@@ -9,6 +9,8 @@ export interface PayloadItem {
   i?: number // tmdb id
   im?: string // imdb id
   p?: string // poster path
+  g?: string // artwork URL (non-TMDB)
+  l?: string // original link (music, podcasts, videos…)
   n?: string // note
   o?: string // origin: who told the sender
 }
@@ -32,7 +34,7 @@ export function buildPayload(list: List): Payload {
         const t = state.library[li.key]
         if (!t) return null
         const origin = t.recos.find((r) => r.from !== state.me.name)?.from
-        const it: PayloadItem = { t: t.title, y: t.year, m: t.media, i: t.tmdbId, im: t.imdbId, p: t.poster, n: li.note, o: origin }
+        const it: PayloadItem = { t: t.title, y: t.year, m: t.media, i: t.tmdbId, im: t.imdbId, p: t.poster, g: t.image, l: t.tmdbId ? undefined : t.link, n: li.note, o: origin }
         return Object.fromEntries(Object.entries(it).filter(([, v]) => v !== undefined && v !== '')) as PayloadItem
       })
       .filter(Boolean) as PayloadItem[],

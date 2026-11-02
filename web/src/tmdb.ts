@@ -1,4 +1,4 @@
-import { state, type TmdbMedia as Media, type Title, titleKey } from './store'
+import { state, type Details, type TmdbMedia as Media, type Title, titleKey } from './store'
 
 const API = 'https://api.themoviedb.org/3'
 export const IMG = 'https://image.tmdb.org/t/p/'
@@ -59,3 +59,41 @@ export async function details(media: Media, id: number): Promise<Title> {
 }
 
 export const poster = (path?: string, size = 'w342') => (path ? `${IMG}${size}${path}` : '')
+
+/** Everything the title page shows: synopsis, people, trailer, images, where to watch (France). */
+export async function fullDetails(media: Media, id: number): Promise<Details & { imdbId?: string }> {
+  const d = await get(`/${media}/${id}`, {
+    append_to_response: 'videos,images,credits,watch/providers',
+    include_image_language: 'fr,en,null',
+    include_video_language: 'fr,en,null',
+  })
+  let overview: string = d.overview || ''
+  if (!overview) overview = (await get(`/${media}/${id}`, { language: 'en-US' }).catch(() => ({}))).overview || ''
+  const vids = (d.videos?.results || []).filter((v: any) => v.site === 'YouTube')
+  const pickVid = (type: string, lang?: string) => vids.find((v: any) => v.type === type && (!lang || v.iso_639_1 === lang))
+  const trailer = (pickVid('Trailer', 'fr') || pickVid('Trailer', 'en') || pickVid('Trailer') || pickVid('Teaser') || vids[0])?.key
+  const crew = d.credits?.crew || []
+  const director = media === 'movie'
+    ? crew.filter((c: any) => c.job === 'Director').map((c: any) => c.name).join(', ')
+    : (d.created_by || []).map((c: any) => c.name).join(', ')
+  const fr = d['watch/providers']?.results?.FR
+  const providers = [...(fr?.flatrate || []), ...(fr?.free || []), ...(fr?.ads || [])]
+    .filter((p: any, i: number, a: any[]) => a.findIndex((x) => x.provider_id === p.provider_id) === i)
+    .slice(0, 6)
+    .map((p: any) => ({ name: p.provider_name, logo: p.logo_path }))
+  return {
+    overview: overview || undefined,
+    tagline: d.tagline || undefined,
+    director: director || undefined,
+    cast: (d.credits?.cast || []).slice(0, 6).map((c: any) => c.name),
+    runtime: d.runtime || d.episode_run_time?.[0] || undefined,
+    seasons: d.number_of_seasons || undefined,
+    genres: (d.genres || []).map((g: any) => g.name),
+    backdrops: (d.images?.backdrops || []).slice(0, 10).map((b: any) => b.file_path),
+    trailer,
+    providers,
+    watchLink: fr?.link,
+    imdbId: d.imdb_id || undefined,
+    fetchedAt: new Date().toISOString(),
+  }
+}

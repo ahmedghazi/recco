@@ -26,8 +26,27 @@ export interface Title {
   title: string
   year?: number
   poster?: string // TMDB poster_path
+  image?: string // absolute artwork URL (Spotify, YouTube… thumbnails)
   link?: string // original link when unresolved
   resolved: boolean
+  details?: Details
+}
+
+/** Extra info for the title page, fetched once (TMDB for films/series, oEmbed for links). */
+export interface Details {
+  overview?: string
+  tagline?: string
+  director?: string
+  cast?: string[]
+  runtime?: number
+  seasons?: number
+  genres?: string[]
+  backdrops?: string[] // TMDB file paths
+  trailer?: string // YouTube video key
+  providers?: { name: string; logo?: string }[]
+  watchLink?: string
+  author?: string // artist, channel, show…
+  fetchedAt: string
 }
 
 export interface Reco {

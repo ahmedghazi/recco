@@ -2,7 +2,7 @@ import './arena.css'
 import './title-page.css'
 import './notify.css'
 import { APP_NAME } from './config'
-import { addToLibrary, libraryList, logGateway, MEDIA, mediaLabel, now, onChange, save, state, uid, type LibItem, type List, type Media, type Title } from './store'
+import { addToLibrary, isTmdbMedia, libraryList, logGateway, MEDIA, mediaLabel, now, onChange, save, state, uid, type LibItem, type List, type Media, type Title } from './store'
 import { hasTmdb, poster, search } from './tmdb'
 import { parseShared, resolve } from './resolve'
 import { detectAndMap } from './csv'
@@ -10,6 +10,7 @@ import { appBase, decode, encode, payloadFile, qrDataUrl, shareUrl, buildPayload
 import { attachFling, flyIn, pickTarget, type Vec } from './fling'
 import { relay, addFriend, type IncomingHand, type Peer } from './relay'
 import { askNotify, banner, closeOverlay, notifyState, pushOverlay, systemNotify } from './notify'
+import { enrich, playerFor } from './enrich'
 
 const app = document.getElementById('app')!
 const esc = (s: unknown) =>
@@ -26,8 +27,9 @@ function toast(msg: string) {
   setTimeout(() => t.remove(), 2600)
 }
 
-function posterHtml(t: Pick<Title, 'title' | 'poster' | 'year'>, size = 'w342') {
+function posterHtml(t: Pick<Title, 'title' | 'poster' | 'year'> & { image?: string }, size = 'w342') {
   if (t.poster) return `<img class="poster" loading="lazy" src="${poster(t.poster, size)}" alt="">`
+  if (t.image) return `<img class="poster art" loading="lazy" src="${esc(t.image)}" alt="" referrerpolicy="no-referrer">`
   return `<div class="poster ph"><span>${esc(t.title)}</span></div>`
 }
 
@@ -39,6 +41,7 @@ interface CardData {
   year?: number
   media?: string
   poster?: string
+  image?: string
   note?: string
   from: string
   origin?: string
@@ -51,7 +54,7 @@ interface CardData {
 function cardHtml(c: CardData) {
   return `<article class="tcard">
     <header><span>${c.rank ? `${pad(c.rank)}/${pad(c.total || c.rank)}` : '—'}</span><span>${mediaLabel(c.media)}</span><span>${c.year ?? ''}</span></header>
-    <div class="art">${posterHtml({ title: c.title, poster: c.poster }, 'w500')}</div>
+    <div class="art">${posterHtml({ title: c.title, poster: c.poster, image: c.image }, 'w500')}</div>
     <h4>${esc(c.title)}</h4>
     <p class="cnote">${c.note ? esc(c.note) : '&nbsp;'}</p>
     <footer><span>From ${esc(c.from)}${c.origin ? ` / via ${esc(c.origin)}` : ''}</span></footer>
@@ -106,6 +109,10 @@ async function collectFrom(input: { url?: string; text?: string; title?: string 
   save()
   logGateway(source, `${parsed.source} → ${item.title}${item.resolved ? '' : ' (unresolved)'}`, true)
   toast(`Saved · ${item.title}`)
+  // fetch the real title, artwork and details in the background (Spotify links carry no title)
+  enrich(item).then((changed) => {
+    if (changed && ['inbox', ''].includes(route()[0])) render()
+  })
   if (candidates.length) showCandidates(item, candidates)
 }
 
@@ -452,7 +459,7 @@ function blockHtml(i: LibItem) {
     <a class="block ${i.status}" href="#/t/${encodeURIComponent(i.key)}">
       <div class="frame">${posterHtml(i, 'w342')}</div>
       <div class="bt">${esc(i.title)}</div>
-      <div class="bm2">${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''} · ${from}${i.status === 'watched' ? ' · watched' : ''}</div>
+      <div class="bm2">${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''} · ${from}${i.status === 'watched' ? ` · ${doneWord(i.media)}` : ''}</div>
     </a>
     <button class="bsend" data-send="${esc(i.key)}" aria-label="Send ${esc(i.title)}">Send</button>
   </div>`
@@ -537,7 +544,7 @@ function renderTitle(key: string) {
   shell('inbox', `
     <a href="#/inbox" class="back">← Saved</a>
     <div class="tpage">
-      <div class="tp-card">${cardHtml({ title: i.title, year: i.year, media: i.media, poster: i.poster, note: i.myNote || i.recos.find((r) => r.note)?.note, from: i.recos[0]?.from || state.me.name, origin: i.recos[0]?.origin })}</div>
+      <div class="tp-card">${cardHtml({ title: i.title, year: i.year, media: i.media, poster: i.poster, image: i.image, note: i.myNote || i.recos.find((r) => r.note)?.note, from: i.recos[0]?.from || state.me.name, origin: i.recos[0]?.origin })}</div>
       <div class="tp-meta">
         <div class="tp-type">
           <select id="tpType" aria-label="Type">${MEDIA.map((m) => `<option value="${m.id}" ${(i.media || 'movie') === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}</select>
@@ -553,12 +560,23 @@ function renderTitle(key: string) {
         <div class="acts">
           ${i.status === 'watched'
             ? `<span class="stars">${[2, 4, 6, 8, 10].map((n) => `<button data-rate="${n}">${(i.rating || 0) >= n ? '■' : '□'}</button>`).join('')}</span>`
-            : '<button data-act="watched" class="ghost sm">Mark watched</button>'}
+            : `<button data-act="watched" class="ghost sm">Mark ${doneWord(i.media)}</button>`}
           ${link ? `<a class="ext" href="${esc(link)}" target="_blank" rel="noopener">Open source ↗</a>` : ''}
           <button data-act="del" class="ghost sm">Remove</button>
         </div>
+        <section class="tp-more" id="tpMore">${moreHtml(i)}</section>
       </div>
     </div>`)
+  wireMore(i)
+  // fetch synopsis, trailer, images… once, then fill in
+  enrich(i).then((changed) => {
+    if (!changed || route()[0] !== 't' || decodeURIComponent(route()[1] || '') !== key) return
+    const busy = document.activeElement?.matches('input, textarea, [contenteditable]')
+    if (busy) {
+      $('#tpMore').innerHTML = moreHtml(i)
+      wireMore(i)
+    } else renderTitle(key)
+  })
 
   $('#tpType').addEventListener('change', (e) => {
     i.media = (e.target as HTMLSelectElement).value as Media
@@ -602,6 +620,92 @@ function renderTitle(key: string) {
       if (t.dataset.act !== 'del') renderTitle(key)
     }
   })
+}
+
+// ---------- title page extras: trailer / player, synopsis, people, images, where to watch ----------
+/** watched / listened / read, depending on the type */
+const doneWord = (m?: string) => (m === 'music' || m === 'podcast' ? 'listened' : m === 'book' || m === 'article' ? 'read' : 'watched')
+
+function fmtRuntime(min: number) {
+  const h = Math.floor(min / 60), m = min % 60
+  return h ? `${h} h ${String(m).padStart(2, '0')}` : `${m} min`
+}
+
+function moreHtml(i: LibItem) {
+  const d = i.details
+  const out: string[] = []
+  const player = i.tmdbId ? null : playerFor(i.link)
+  if (d?.trailer) {
+    out.push(`<button class="yt" data-yt="${esc(d.trailer)}" style="background-image:url(https://i.ytimg.com/vi/${esc(d.trailer)}/hqdefault.jpg)"><span>▶ Trailer</span></button>`)
+  } else if (player?.kind === 'youtube') {
+    out.push(`<button class="yt" data-yt="${esc(player.src)}" style="background-image:url(https://i.ytimg.com/vi/${esc(player.src)}/hqdefault.jpg)"><span>▶ Play</span></button>`)
+  } else if (player) {
+    out.push(`<iframe class="player${player.height ? '' : ' wide'}" src="${esc(player.src)}" ${player.height ? `height="${player.height}"` : ''} loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" title="Player"></iframe>`)
+  }
+  if (d?.tagline) out.push(`<p class="tagline">${esc(d.tagline)}</p>`)
+  if (d?.overview) out.push(`<p class="overview">${esc(d.overview)}</p>`)
+  const facts: [string, string | undefined][] = [
+    [i.media === 'tv' ? 'Created by' : 'Director', d?.director],
+    ['Cast', d?.cast?.length ? d.cast.join(', ') : undefined],
+    ['Runtime', d?.runtime ? fmtRuntime(d.runtime) : undefined],
+    ['Seasons', d?.seasons ? String(d.seasons) : undefined],
+    ['Genres', d?.genres?.length ? d.genres.join(', ') : undefined],
+    ['By', d?.author],
+  ]
+  const shown = facts.filter(([, v]) => v)
+  if (shown.length) out.push(`<dl class="facts">${shown.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`)
+  if (d?.providers?.length)
+    out.push(`<div class="watch"><h3>Watch in France</h3><div class="provs">${d.providers
+      .map((p) => `<span class="prov">${p.logo ? `<img src="${poster(p.logo, 'w45')}" alt="">` : ''}${esc(p.name)}</span>`)
+      .join('')}</div>${d.watchLink ? `<a class="muted small" href="${esc(d.watchLink)}" target="_blank" rel="noopener">All options on TMDB / JustWatch ↗</a>` : ''}</div>`)
+  if (d?.backdrops?.length)
+    out.push(`<h3>Images</h3><div class="shots">${d.backdrops.map((b) => `<img loading="lazy" src="${poster(b, 'w780')}" alt="">`).join('')}</div>`)
+  if (!d && (i.tmdbId || i.link)) out.push('<p class="muted small">Loading details…</p>')
+  if (!i.tmdbId && isTmdbMedia(i.media || 'movie') && hasTmdb())
+    out.push(`<button class="ghost sm" data-find>Find details on TMDB</button>`)
+  if (!hasTmdb() && isTmdbMedia(i.media || 'movie') && !d) out.push('<p class="muted small">Add a TMDB key in Settings to see synopsis, trailer and images.</p>')
+  return out.join('')
+}
+
+function wireMore(i: LibItem) {
+  const box = document.getElementById('tpMore')
+  if (!box) return
+  box.onclick = async (e) => {
+    const t = e.target as HTMLElement
+    const yt = t.closest<HTMLElement>('[data-yt]')
+    if (yt) {
+      const f = document.createElement('iframe')
+      f.className = 'player wide'
+      f.src = `https://www.youtube-nocookie.com/embed/${yt.dataset.yt}?autoplay=1&playsinline=1&rel=0`
+      f.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture'
+      f.allowFullscreen = true
+      yt.replaceWith(f)
+      return
+    }
+    if (t.closest('[data-find]')) {
+      const res = await search(i.title, i.year).catch(() => [])
+      const cands = res.filter((r) => isTmdbMedia(r.media)).slice(0, 8)
+      if (!cands.length) return toast('Nothing found on TMDB')
+      const sh = document.createElement('div')
+      sh.className = 'sheet'
+      sh.innerHTML = `<div class="sheet-card"><h3>Which one is it?</h3><div class="cand">${cands
+        .map((c, n) => `<button data-n="${n}">${posterHtml(c, 'w154')}<span>${esc(c.title)} <em>${c.year ?? ''}</em></span></button>`)
+        .join('')}</div><button class="ghost wide" data-close>Cancel</button></div>`
+      document.body.append(sh)
+      pushOverlay(() => sh.remove())
+      sh.addEventListener('click', (ev) => {
+        const b = (ev.target as HTMLElement).closest<HTMLElement>('button')
+        if (!b) return
+        if (b.dataset.n) {
+          const c = cands[Number(b.dataset.n)]
+          // fill in place: the key stays, so lists and recommendations keep pointing here
+          Object.assign(i, { tmdbId: c.tmdbId, media: c.media, poster: c.poster, year: c.year, title: c.title, resolved: true, details: undefined })
+          save()
+        }
+        closeOverlay(() => renderTitle(i.key))
+      })
+    }
+  }
 }
 
 // Lists: Are.na-style channels, with search (list names and titles inside) and sort
@@ -739,7 +843,7 @@ async function openFling(l: List) {
       const t = state.library[li.key]
       if (!t) return ''
       const origin = t.recos.find((r) => r.from !== state.me.name)?.from
-      return `<div class="hc" style="--i:${i}">${cardHtml({ title: t.title, year: t.year, media: t.media, poster: t.poster, note: li.note, from: state.me.name, origin, rank: l.topN ? i + 1 : undefined, total: l.items.length, rarity: t.recos.length + 1 })}</div>`
+      return `<div class="hc" style="--i:${i}">${cardHtml({ title: t.title, year: t.year, media: t.media, poster: t.poster, image: t.image, note: li.note, from: state.me.name, origin, rank: l.topN ? i + 1 : undefined, total: l.items.length, rarity: t.recos.length + 1 })}</div>`
     })
     .reverse()
     .join('')
@@ -901,7 +1005,7 @@ function renderReceived(p: Payload, channel: string) {
       <p class="eyebrow">${esc(p.from)} sent you ${titles(p.items.length)}</p>
       <h2>${esc(p.list.name)}</h2>
       <div class="row-cards" id="incoming">${p.items
-        .map((it, i) => `<div class="rc">${cardHtml({ title: it.t, year: it.y, media: it.m, poster: it.p, note: it.n, from: p.from, origin: it.o, rank: p.list.topN ? i + 1 : undefined, total: p.items.length, rarity: it.o ? 2 : 1 })}</div>`)
+        .map((it, i) => `<div class="rc">${cardHtml({ title: it.t, year: it.y, media: it.m, poster: it.p, image: it.g, note: it.n, from: p.from, origin: it.o, rank: p.list.topN ? i + 1 : undefined, total: p.items.length, rarity: it.o ? 2 : 1 })}</div>`)
         .join('')}</div>
       ${mine ? '<p class="muted">Your own list. This is what your friends see.</p>' : ''}
       <button id="keep" class="big wide">${p.items.length === 1 ? 'Save' : `Save all ${pad(p.items.length)}`}</button>
@@ -925,7 +1029,7 @@ function keepPayload(p: Payload, channel: string, ref = '') {
   const single = !!p.list.single || p.items.length === 1
   for (const it of p.items) {
     const item = addToLibrary(
-      { title: it.t, year: it.y, media: it.m, tmdbId: it.i, imdbId: it.im, poster: it.p, resolved: !!it.i },
+      { title: it.t, year: it.y, media: it.m, tmdbId: it.i, imdbId: it.im, poster: it.p, image: it.g, link: it.l, resolved: !!it.i },
       `received:${channel}`,
       { from: p.from, origin: it.o, note: it.n, at: now(), channel },
     )
@@ -962,7 +1066,7 @@ async function showIncoming(m: IncomingHand) {
       <p class="eyebrow">${esc(m.from.name)} sent you</p>
       <h2>${esc(p.list.name)}</h2>
       <div class="row-cards">${p.items
-        .map((it, i) => `<div class="rc">${cardHtml({ title: it.t, year: it.y, media: it.m, poster: it.p, note: it.n, from: m.from.name, origin: it.o, rank: p.list.topN ? i + 1 : undefined, total: p.items.length, rarity: it.o ? 2 : 1 })}</div>`)
+        .map((it, i) => `<div class="rc">${cardHtml({ title: it.t, year: it.y, media: it.m, poster: it.p, image: it.g, note: it.n, from: m.from.name, origin: it.o, rank: p.list.topN ? i + 1 : undefined, total: p.items.length, rarity: it.o ? 2 : 1 })}</div>`)
         .join('')}</div>
       ${friend
         ? `<p class="muted">Saved.</p><button class="big wide" data-a="open">Open saved</button>`
