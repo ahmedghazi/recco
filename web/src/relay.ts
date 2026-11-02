@@ -21,8 +21,12 @@ type Listener<T> = (v: T) => void
 const env = import.meta.env as any
 function relayUrl(): string {
   const raw = (state.relayUrl || env.VITE_RELAY_URL || '').trim()
-  // dev default: relay on the same host, port 8787
-  if (!raw) return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8787`
+  if (!raw) {
+    // local dev (localhost or a LAN address): relay on the same host, port 8787
+    const local = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)|\.local$/.test(location.hostname)
+    // deployed without VITE_RELAY_URL: use the public relay
+    return local ? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8787` : 'wss://recco-relay.fly.dev'
+  }
   return normalizeWs(raw)
 }
 
