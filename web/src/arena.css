@@ -182,7 +182,7 @@ q::before { content: '“'; } q::after { content: '”'; }
 .codebox b { font-size: 22px; letter-spacing: .15em; color: var(--strong); }
 .codebox input { width: 9ch; letter-spacing: .15em; text-transform: uppercase; padding: 4px 6px; }
 .hand { position: relative; width: min(250px, 64vw, calc((100dvh - 340px) * 0.6)); margin-top: auto; aspect-ratio: 5/8.2; touch-action: none; cursor: grab; will-change: transform; }
-.hand .hc { position: absolute; inset: 0; transform: translate(calc(var(--i) * 5px + var(--dx, 0px)), calc(var(--i) * -5px + var(--dy, 0px))) rotate(var(--rot, 0deg)); transition: transform .22s cubic-bezier(.2,.8,.2,1); transform-origin: 50% 90%; }
+.hand .hc { position: absolute; inset: 0; transform: translate(calc(var(--i) * 5px + var(--dx, 0px)), calc(var(--i) * -5px + var(--dy, 0px))) rotate(var(--rot, 0deg)); transform-origin: 50% 80%; will-change: transform; }
 .hand .tcard { height: 100%; box-shadow: 0 1px 0 var(--line); }
 .hand .tcard .art { flex: 1; min-height: 0; }
 .hand .tcard .art .poster { aspect-ratio: auto; height: 100%; }

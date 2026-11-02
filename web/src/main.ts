@@ -1,6 +1,7 @@
 import './arena.css'
 import './title-page.css'
 import './notify.css'
+import './radial.css'
 import { APP_NAME } from './config'
 import { addToLibrary, isTmdbMedia, libraryList, logGateway, MEDIA, mediaLabel, now, onChange, save, state, uid, type LibItem, type List, type Media, type Title } from './store'
 import { hasTmdb, poster, search } from './tmdb'
@@ -11,6 +12,7 @@ import { attachFling, flyIn, pickTarget, type Vec } from './fling'
 import { relay, addFriend, type IncomingHand, type Peer } from './relay'
 import { askNotify, banner, closeOverlay, notifyState, pushOverlay, systemNotify } from './notify'
 import { enrich, playerFor } from './enrich'
+import { attachRadial, type RadialItem } from './radial'
 import { globalScore, hasOmdb } from './omdb'
 
 const app = document.getElementById('app')!
@@ -507,6 +509,10 @@ function renderInbox() {
     )
     $('#count').textContent = `${shown.length} ${shown.length === 1 ? 'block' : 'blocks'}`
     $('#blocks').innerHTML = shown.map(blockHtml).join('') || '<p class="empty">Nothing matches.</p>'
+    document.querySelectorAll<HTMLElement>('#blocks [data-send]').forEach((b) => {
+      const it = state.library[b.dataset.send!]
+      if (it) wireRadial(b, () => singleList(it))
+    })
   }
   // one tap: Send straight from the grid, no detour through the title page
   $('#blocks').addEventListener('click', (e) => {
@@ -599,6 +605,10 @@ function renderTitle(key: string) {
   $('#tpNote').addEventListener('change', (e) => {
     i.myNote = (e.target as HTMLInputElement).value.trim() || undefined
     save()
+  })
+  wireRadial($('#tpSend'), () => {
+    i.myNote = $<HTMLInputElement>('#tpNote').value.trim() || undefined
+    return singleList(i)
   })
   $('#tpSend').addEventListener('click', () => {
     i.myNote = $<HTMLInputElement>('#tpNote').value.trim() || undefined
@@ -829,6 +839,8 @@ function renderList(id: string) {
     const q = (e.target as HTMLInputElement).value.toLowerCase().trim()
     document.querySelectorAll<HTMLElement>('#addgrid .tile').forEach((t) => (t.hidden = !!q && !t.dataset.s!.includes(q)))
   })
+  const shareBtn = document.getElementById('share')
+  if (shareBtn && l.items.length) wireRadial(shareBtn, () => l)
   $('#lname').addEventListener('blur', (e) => {
     l.name = (e.target as HTMLElement).textContent!.trim() || l.name
     save()
@@ -858,24 +870,91 @@ function renderList(id: string) {
 }
 
 // ---------- the fling stage ----------
-/** While dragging, the cards under the top one lag behind and fan out; on release they catch up one by one. */
+/**
+ * The pile trails behind the finger like a pack of cards being dragged: card k shows where the
+ * pile was k steps ago, so the cards follow the same path and catch up smoothly on release.
+ */
+const pileTrail = new WeakMap<HTMLElement, { hist: Vec[]; cur: Vec; raf: number; idle: number }>()
 function staggerPile(hand: HTMLElement, pos: Vec | null, flung = false) {
+  let t = pileTrail.get(hand)
+  if (!t) {
+    t = { hist: [], cur: { x: 0, y: 0 }, raf: 0, idle: 0 }
+    pileTrail.set(hand, t)
+  }
+  // while dragging, follow the finger; on release the pile is back at 0 (or gone, if flung)
+  t.cur = pos ? { ...pos } : { x: 0, y: 0 }
+  t.idle = 0
+  if (flung) {
+    // flung: the container flies away; let the trail stretch a bit behind it
+    t.hist = t.hist.map((h) => ({ x: h.x * 0.6, y: h.y * 0.6 }))
+  }
+  if (t.raf) return
   const cards = Array.from(hand.querySelectorAll<HTMLElement>('.hc')).reverse() // 0 = top card
-  cards.forEach((el, k) => {
-    if (!pos) {
-      el.style.transitionDelay = `${k * (flung ? 55 : 30)}ms`
-      el.style.setProperty('--dx', '0px')
-      el.style.setProperty('--dy', '0px')
-      el.style.setProperty('--rot', '0deg')
+  cards.forEach((el) => (el.style.transition = 'none'))
+  const STEP = 3 // frames of delay between two cards
+  const tick = () => {
+    const st = t!
+    st.hist.unshift({ ...st.cur })
+    st.hist.length = Math.min(st.hist.length, cards.length * STEP + 1)
+    let moving = false
+    cards.forEach((el, k) => {
+      if (!k) return
+      const past = st.hist[Math.min(st.hist.length - 1, k * STEP)]
+      const dx = past.x - st.cur.x, dy = past.y - st.cur.y
+      if (Math.abs(dx) + Math.abs(dy) > 0.5) moving = true
+      el.style.setProperty('--dx', `${dx.toFixed(1)}px`)
+      el.style.setProperty('--dy', `${dy.toFixed(1)}px`)
+      el.style.setProperty('--rot', `${Math.max(-4, Math.min(4, dx / 24)).toFixed(2)}deg`)
+    })
+    st.idle = moving ? 0 : st.idle + 1
+    if (st.idle > 20) {
+      st.raf = 0
+      cards.forEach((el) => {
+        el.style.setProperty('--dx', '0px')
+        el.style.setProperty('--dy', '0px')
+        el.style.setProperty('--rot', '0deg')
+      })
       return
     }
-    el.style.transitionDelay = `${k * 12}ms`
-    const lag = Math.min(0.7, k * 0.18)
-    const rot = Math.max(-14, Math.min(14, (-pos.x / 25) * k + (pos.y < 0 ? k * 1.2 * Math.sign(pos.x || 1) : 0)))
-    el.style.setProperty('--dx', `${-pos.x * lag}px`)
-    el.style.setProperty('--dy', `${-pos.y * lag}px`)
-    el.style.setProperty('--rot', `${rot}deg`)
-  })
+    st.raf = requestAnimationFrame(tick)
+  }
+  t.raf = requestAnimationFrame(tick)
+}
+
+// ---------- hold-to-send (Tumblr-style) on every Send button ----------
+const singleList = (i: LibItem): List => ({ id: 'single', name: i.title, items: [{ key: i.key, note: i.myNote }], createdAt: now(), single: true })
+
+async function quickSend(peer: Peer, l: List) {
+  const ok = await relay.send(peer.id, buildPayload(l))
+  toast(ok ? `Sent to ${peer.name}` : `Couldn't reach ${peer.name}`)
+  logGateway('nearby', `${l.name} → ${peer.name} (hold)${ok ? '' : ' · not delivered'}`, ok)
+}
+
+function wireRadial(btn: HTMLElement, getList: () => List) {
+  let url = ''
+  attachRadial(
+    btn,
+    () => {
+      const l = getList()
+      const items: RadialItem[] = relay.peers.slice(0, 6).map((p) => ({
+        id: p.id, label: p.name, glyph: p.name.slice(0, 1).toUpperCase(), kind: 'peer', run: () => void quickSend(p, l),
+      }))
+      if (support.share())
+        items.push({
+          id: 'share', label: 'Share…', glyph: '↗', kind: 'action',
+          run: () => {
+            if (!url) return toast('One moment…')
+            navigator.share({ title: l.name, text: `${state.me.name} sent you: ${l.name}`, url })
+              .then(() => logGateway('web-share', `${l.name} (hold)`))
+              .catch(() => {})
+          },
+        })
+      items.push({ id: 'link', label: 'Copy link', glyph: '⧉', kind: 'action', run: () => void (url && navigator.clipboard?.writeText(url).then(() => toast('Link copied'))) })
+      items.push({ id: 'more', label: 'QR & more', glyph: '⋯', kind: 'action', run: () => void openFling(l) })
+      return items
+    },
+    () => void shareUrl(getList(), 'link').then((u) => (url = u)),
+  )
 }
 
 async function openFling(l: List) {
