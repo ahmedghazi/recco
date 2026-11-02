@@ -1,3 +1,5 @@
+import { token } from './tokens'
+
 // Tumblr-style hold-to-share: hold a button, destinations pop out in an arc around the finger,
 // slide onto one and let go. A short tap still behaves like a normal click.
 
@@ -9,7 +11,6 @@ export interface RadialItem {
   run: () => void // called synchronously on release (keeps user activation for navigator.share)
 }
 
-const HOLD_MS = 280
 
 export function attachRadial(btn: HTMLElement, items: () => RadialItem[], onHoldStart?: () => void) {
   let timer = 0
@@ -31,7 +32,7 @@ export function attachRadial(btn: HTMLElement, items: () => RadialItem[], onHold
       open = show(x, y, items())
       suppressClick = true
       navigator.vibrate?.(12)
-    }, HOLD_MS)
+    }, token('--hold-delay', 280))
   })
 
   btn.addEventListener('pointermove', (e) => {

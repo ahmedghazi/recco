@@ -1,0 +1,12 @@
+// Install help, notification prompt
+
+.install-bar { display: flex; gap: 8px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: var(--fs-s); color: var(--fg); background: var(--soft); }
+.install-bar span { flex: 1; }
+.steps { padding-left: 20px; margin: 8px 0 16px; }
+.steps li { padding: 6px 0; }
+.ico { display: inline-block; border: 1px solid var(--rule); border-radius: var(--r); padding: 0 5px; font-size: var(--fs-s); }
+.install-arrow { position: fixed; left: 50%; bottom: calc(6px + env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: var(--fs-score); color: var(--green); animation: bob 1s ease-in-out infinite; pointer-events: none; }
+.install-sheet { align-items: center; }
+.install-sheet .sheet-card { border-radius: var(--r-sheet); margin: 0 12px 70px; }
+.notify-ask { display: flex; gap: 12px; align-items: center; justify-content: space-between; border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; margin-bottom: 16px; font-size: var(--fs-s); }
+@keyframes bob { 50% { transform: translate(-50%, 6px); } }

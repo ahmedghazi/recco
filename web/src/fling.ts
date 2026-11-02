@@ -1,3 +1,5 @@
+import { token } from './tokens'
+
 // Drag-and-fling: lift the hand, aim, flick, it flies off in that direction.
 // The share sheet fallback must be called inside pointerup (user activation),
 // so `onFling` runs synchronously and the animation plays alongside.
@@ -103,7 +105,7 @@ export function flyIn(el: HTMLElement) {
       { transform: 'translateY(6px) rotate(.6deg) scale(1.005)', opacity: 1, offset: 0.85 },
       { transform: 'translateY(0) rotate(0) scale(1)', opacity: 1 },
     ],
-    { duration: 1400, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards' },
+    { duration: token('--arrive-duration', 1400), easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards' },
   )
   navigator.vibrate?.(10)
 }

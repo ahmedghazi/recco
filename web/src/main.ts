@@ -1,7 +1,4 @@
-import './arena.css'
-import './title-page.css'
-import './notify.css'
-import './radial.css'
+import './styles/main.scss'
 import { APP_NAME } from './config'
 import { addToLibrary, isTmdbMedia, libraryList, logGateway, MEDIA, mediaLabel, now, onChange, save, state, uid, type LibItem, type List, type Media, type Title } from './store'
 import { hasTmdb, poster, search } from './tmdb'
@@ -13,6 +10,7 @@ import { relay, addFriend, type IncomingHand, type Peer } from './relay'
 import { askNotify, banner, closeOverlay, notifyState, pushOverlay, systemNotify } from './notify'
 import { enrich, playerFor } from './enrich'
 import { attachRadial, type RadialItem } from './radial'
+import { token } from './tokens'
 import { globalScore, hasOmdb } from './omdb'
 
 const app = document.getElementById('app')!
@@ -891,7 +889,7 @@ function staggerPile(hand: HTMLElement, pos: Vec | null, flung = false) {
   if (t.raf) return
   const cards = Array.from(hand.querySelectorAll<HTMLElement>('.hc')).reverse() // 0 = top card
   cards.forEach((el) => (el.style.transition = 'none'))
-  const STEP = 3 // frames of delay between two cards
+  const STEP = Math.max(1, Math.round(token('--trail-frames', 3))) // frames of delay between two cards (theme.css)
   const tick = () => {
     const st = t!
     st.hist.unshift({ ...st.cur })
@@ -1199,7 +1197,7 @@ async function showIncoming(m: IncomingHand) {
   pushOverlay(() => ov.remove())
   ov.querySelectorAll<HTMLElement>('.rc').forEach((el, i) => {
     el.style.opacity = '0'
-    setTimeout(() => flyIn(el), 150 + i * 280)
+    setTimeout(() => flyIn(el), 150 + i * token('--arrive-stagger', 280))
   })
   logGateway('nearby-in', `${p.list.name} from ${m.from.name}${friend ? ' · auto-kept' : ''}`)
   ov.addEventListener('click', (e) => {

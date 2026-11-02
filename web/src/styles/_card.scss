@@ -1,0 +1,11 @@
+// The card that gets sent
+
+.tcard { width: 100%; background: var(--bg); color: var(--fg); border: 1px solid var(--rule); border-radius: var(--r-card); padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: var(--fs-s); user-select: none; -webkit-user-select: none; }
+.tcard header, .tcard footer { display: flex; justify-content: space-between; gap: 8px; font-size: var(--fs-xs); color: var(--mid); }
+.tcard footer { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--line); }
+.tcard .art { background: var(--soft); display: flex; justify-content: center; }
+.tcard .art .poster { aspect-ratio: 4/5; }
+.tcard .art .poster.ph { font-size: var(--fs-l); }
+.tcard h4 { font-size: var(--fs-l); line-height: 1.2; }
+.tcard .cnote { margin: 0; min-height: 2.6em; color: var(--fg); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tcard img { -webkit-user-drag: none; pointer-events: none; }

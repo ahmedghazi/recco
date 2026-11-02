@@ -1,3 +1,5 @@
+import { token } from './tokens'
+
 // Overlays that close with the phone's back gesture, and "something arrived" signals:
 // an in-app banner + soft chime + vibration, and a system notification when the app is in the background.
 
@@ -56,7 +58,7 @@ export function chime() {
 }
 
 /** A banner that slides down from the top, then goes away. Resolves when it's done. */
-export function banner(line1: string, line2: string, ms = 1400): Promise<void> {
+export function banner(line1: string, line2: string, ms = token('--banner-duration', 1400)): Promise<void> {
   return new Promise((resolve) => {
     const el = document.createElement('div')
     el.className = 'arrival'

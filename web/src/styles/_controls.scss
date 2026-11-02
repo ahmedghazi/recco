@@ -1,0 +1,27 @@
+// Inputs, selects, buttons
+
+input, textarea, select, button { font: inherit; color: inherit; }
+input, textarea, select { width: 100%; background: var(--bg); border: 1px solid var(--rule); border-radius: var(--r); padding: 9px 10px; outline: none; -webkit-appearance: none; appearance: none; font-size: var(--fs-input); }
+select { width: auto; padding-right: 26px; background-image: linear-gradient(45deg, transparent 50%, var(--mid) 50%), linear-gradient(135deg, var(--mid) 50%, transparent 50%); background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%; background-size: 5px 5px; background-repeat: no-repeat; font-size: var(--fs-m); }
+input:focus, textarea:focus, select:focus { border-color: var(--fg); }
+input::placeholder, textarea::placeholder { color: var(--mid); }
+textarea { resize: vertical; }
+form > input, form > textarea, form > select { margin-bottom: 8px; }
+label { display: block; font-size: var(--fs-s); color: var(--mid); margin-bottom: 12px; }
+label input, label select { margin-top: 4px; color: var(--fg); }
+button { background: var(--strong); color: var(--bg); border: 1px solid var(--strong); border-radius: var(--r); padding: 9px 14px; font-size: var(--fs-m); cursor: pointer; white-space: nowrap; }
+button:disabled { opacity: .35; cursor: default; }
+button.ghost { background: var(--bg); color: var(--fg); border-color: var(--rule); }
+button.ghost:hover { border-color: var(--fg); }
+button.sm { padding: 5px 10px; font-size: var(--fs-s); }
+button.big { padding: 12px 20px; font-size: var(--fs-base); }
+button.wide { width: 100%; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row > input { flex: 1; }
+.row.wrap { flex-wrap: wrap; }
+.file { display: inline-block; margin: 0 8px 8px 0; }
+.file input { display: none; }
+.file span { display: inline-block; border: 1px solid var(--rule); border-radius: var(--r); padding: 8px 12px; font-size: var(--fs-m); color: var(--fg); cursor: pointer; }
+.ways { list-style: none; padding: 0; }
+.ways li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.bm { text-decoration: none; border: 1px solid var(--rule); border-radius: var(--r); padding: 2px 8px; }

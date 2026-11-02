@@ -1,0 +1,29 @@
+// Saved: Are.na-style grid of blocks (+ Send on each block)
+
+.poster { display: block; width: 100%; aspect-ratio: 2/3; object-fit: cover; background: var(--soft); }
+.poster.ph { display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; background: var(--soft); color: var(--fg); font-size: var(--fs-m); line-height: 1.25; overflow: hidden; }
+.poster.ph span { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+
+.blocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--block-min), 1fr)); gap: 28px 16px; }
+@media (max-width: 420px) { .blocks { grid-template-columns: 1fr 1fr; } }
+.block { text-decoration: none; display: flex; flex-direction: column; gap: 8px; }
+.block .frame { aspect-ratio: 1; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--bg); transition: border-color var(--t-fast); }
+.block:hover .frame { border-color: var(--mid); }
+.block .frame .poster { height: 100%; width: auto; max-width: 100%; aspect-ratio: 2/3; }
+.block .frame .poster.ph { width: 100%; height: 100%; aspect-ratio: auto; background: var(--bg); }
+.block .bt { font-size: var(--fs-m); color: var(--strong); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.block .bm2 { font-size: var(--fs-xs); color: var(--mid); line-height: 1.35; }
+.block .bm2 .g { color: var(--green); }
+.block.watched .frame { opacity: .55; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px 10px; margin-top: 12px; }
+.grid.small { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+.tile { background: none; color: var(--fg); border: 0; padding: 0; text-align: left; font-size: var(--fs-s); white-space: normal; position: relative; border-radius: 0; }
+.tile span { display: block; margin-top: 6px; }
+.tile em { color: var(--mid); font-style: normal; }
+.tile.added::after { content: 'Saved · tap to open'; position: absolute; left: 0; right: 0; top: 0; background: var(--green); color: var(--on-accent); padding: 3px 6px; font-size: var(--fs-2xs); }
+
+.block-wrap { position: relative; }
+.bsend { position: absolute; right: 8px; top: 8px; padding: 4px 10px; font-size: var(--fs-xs); border-radius: var(--r-pill); background: var(--bg); color: var(--green); border: 1px solid var(--green); opacity: .95; }
+.bsend:active { background: var(--green); color: var(--on-accent); }
+.block .bm2 .sc { color: var(--strong); }

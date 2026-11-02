@@ -1,0 +1,8 @@
+// Search, filter chips, sort
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.toolbar input[type=search] { flex: 1 1 200px; width: auto; }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px 16px; padding: 0 16px; }
+.chips a, .chips button { flex: none; text-decoration: none; background: var(--bg); color: var(--fg); border: 1px solid var(--rule); border-radius: var(--r-pill); padding: 4px 11px; font-size: var(--fs-s); cursor: pointer; }
+.chips .on { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+.count { color: var(--mid); font-size: var(--fs-s); margin-bottom: 12px; }

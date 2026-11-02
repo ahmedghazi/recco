@@ -1,7 +1,0 @@
-/* "Someone sent you something": banner that slides down from the top */
-.arrival { position: fixed; left: 0; right: 0; top: 0; z-index: 50; display: flex; flex-direction: column; gap: 2px; padding: calc(14px + env(safe-area-inset-top)) 16px 14px; background: var(--fg); color: var(--bg); transform: translateY(-100%); transition: transform .45s cubic-bezier(.16,1,.3,1); }
-.arrival.in { transform: translateY(0); }
-.arrival span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .7; }
-.arrival b { font-size: 17px; letter-spacing: -0.02em; }
-.notify-ask { display: flex; gap: 12px; align-items: center; justify-content: space-between; border: 1px solid var(--rule); padding: 10px 12px; margin-bottom: 16px; font-size: 12px; }
-.incoming-ov [data-a="notify"] { margin-top: 12px; }

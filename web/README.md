@@ -2,7 +2,11 @@
 
 An installable web app for testing the collect and share gateways before building anything native. No backend: data lives on the device, and shared lists travel inside the link.
 
-Design: Are.na-inspired (`src/arena.css`): one Arial-like sans, white and grey, square blocks, green for what's live (people around). Navigation is a burger menu. `src/style.css` (the earlier mono/Swiss look) is no longer imported.
+Design: Are.na-inspired. Styles are SCSS in `src/styles/`:
+
+- `_tokens.scss` — **edit this to customise**: colour maps (light + dark), fonts, font sizes, spacing, radii, shadows, component sizes and motion. The maps are emitted as CSS custom properties on `:root`, so the JS reads the timings too (`--arrive-duration`, `--arrive-stagger`, `--banner-duration`, `--hold-delay`, `--trail-frames`).
+- one partial per area: `_base`, `_header`, `_controls`, `_toolbar`, `_blocks`, `_lists`, `_card`, `_send`, `_received`, `_settings`, `_sheets`, `_install`, `_title-page`, `_notify`, `_radial`; `main.scss` loads them in order.
+- `src/style.css` is the old mono/Swiss look, no longer imported.
 
 The name is a placeholder. Change it in `src/config.ts`, `public/manifest.webmanifest` and `index.html`.
 
