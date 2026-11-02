@@ -246,3 +246,8 @@ q::before { content: '“'; } q::after { content: '”'; }
 .install-sheet .sheet-card { border-radius: 12px; margin: 0 12px 70px; }
 .notify-ask { display: flex; gap: 12px; align-items: center; justify-content: space-between; border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; margin-bottom: 16px; font-size: 13px; }
 @keyframes bob { 50% { transform: translate(-50%, 6px); } }
+
+/* Send straight from a block */
+.block-wrap { position: relative; }
+.bsend { position: absolute; right: 8px; top: 8px; padding: 4px 10px; font-size: 12px; border-radius: 99px; background: var(--bg); color: var(--green); border: 1px solid var(--green); opacity: .95; }
+.bsend:active { background: var(--green); color: #fff; }

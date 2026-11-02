@@ -448,11 +448,14 @@ function matches(i: LibItem, q: string) {
 
 function blockHtml(i: LibItem) {
   const from = i.recos.length ? `from ${i.recos.map((r) => esc(r.from)).slice(0, 2).join(', ')}${i.recos.length > 2 ? ` +${i.recos.length - 2}` : ''}` : 'added by you'
-  return `<a class="block ${i.status}" href="#/t/${encodeURIComponent(i.key)}">
-    <div class="frame">${posterHtml(i, 'w342')}</div>
-    <div class="bt">${esc(i.title)}</div>
-    <div class="bm2">${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''} · ${from}${i.status === 'watched' ? ' · watched' : ''}</div>
-  </a>`
+  return `<div class="block-wrap">
+    <a class="block ${i.status}" href="#/t/${encodeURIComponent(i.key)}">
+      <div class="frame">${posterHtml(i, 'w342')}</div>
+      <div class="bt">${esc(i.title)}</div>
+      <div class="bm2">${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''} · ${from}${i.status === 'watched' ? ' · watched' : ''}</div>
+    </a>
+    <button class="bsend" data-send="${esc(i.key)}" aria-label="Send ${esc(i.title)}">Send</button>
+  </div>`
 }
 
 function renderInbox() {
@@ -496,6 +499,14 @@ function renderInbox() {
     $('#count').textContent = `${shown.length} ${shown.length === 1 ? 'block' : 'blocks'}`
     $('#blocks').innerHTML = shown.map(blockHtml).join('') || '<p class="empty">Nothing matches.</p>'
   }
+  // one tap: Send straight from the grid, no detour through the title page
+  $('#blocks').addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-send]')
+    if (!b) return
+    e.preventDefault()
+    const i = state.library[b.dataset.send!]
+    if (i) openFling({ id: 'single', name: i.title, items: [{ key: i.key, note: i.myNote }], createdAt: now(), single: true })
+  })
   const sortEl = $<HTMLSelectElement>('#sort')
   sortEl.value = savedView.sort
   sortEl.addEventListener('change', () => ((savedView.sort = sortEl.value as typeof savedView.sort), draw()))
@@ -748,6 +759,7 @@ async function openFling(l: List) {
     <div class="hand" id="deal">${cards}</div>
     <p class="hint" id="hint"></p>
     <div class="stage-acts">
+      ${support.share() ? '<button data-a="native" class="ghost">Share…</button>' : ''}
       <button data-a="qr" class="ghost">QR</button>
       <button data-a="copy" class="ghost">Copy link</button>
       ${support.shareFiles() ? '<button data-a="file" class="ghost">Send as file</button>' : ''}
@@ -833,6 +845,14 @@ async function openFling(l: List) {
     if (b.classList.contains('x')) return closeOverlay()
     if (b.classList.contains('peer')) return sendTo(b)
     const a = b.dataset.a
+    if (a === 'native') {
+      // the phone's own share sheet (AirDrop, Messages, WhatsApp…); must run synchronously in the tap
+      navigator
+        .share({ title: l.name, text: `${state.me.name} sent you: ${l.name}`, url })
+        .then(() => logGateway('web-share', `${l.name} (button)`))
+        .catch((err) => logGateway('web-share', err.name === 'AbortError' ? 'cancelled' : err.message, false))
+      return
+    }
     if (a === 'code') {
       const box = $('.codebox', stage)
       box.hidden = !box.hidden
