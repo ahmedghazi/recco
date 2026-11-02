@@ -1,5 +1,5 @@
 // Minimal offline cache: app shell + TMDB posters. Bump VERSION to force refresh.
-const VERSION = 'recco-v1'
+const VERSION = 'recco-v2'
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(['./', './manifest.webmanifest'])))
   self.skipWaiting()
@@ -15,7 +15,18 @@ self.addEventListener('fetch', (e) => {
   if (url.hostname === 'api.themoviedb.org') return // always live
   if (req.mode === 'navigate') {
     // share-target and ?add= hits must reach the page with their query string
-    e.respondWith(fetch(req).catch(() => caches.match('./')))
+    // always ask the network first so a new deploy shows up on the next open
+    e.respondWith(
+      fetch(req, { cache: 'no-store' })
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone()
+            caches.open(VERSION).then((c) => c.put('./', copy))
+          }
+          return res
+        })
+        .catch(() => caches.match('./')),
+    )
     return
   }
   if (url.origin === location.origin || url.hostname === 'image.tmdb.org') {
