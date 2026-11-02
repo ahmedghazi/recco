@@ -89,13 +89,16 @@ export function pickTarget(origin: HTMLElement, targets: HTMLElement[], dir: Vec
 
 /** Receiver side: the card drops in from the top edge. */
 export function flyIn(el: HTMLElement) {
+  // slow, soft landing: falls from above, drifts, settles
+  el.style.opacity = '1'
   el.animate(
     [
-      { transform: 'translateY(-120vh) rotate(-8deg) scale(.85)', opacity: 0 },
-      { transform: 'translateY(12px) rotate(1.5deg) scale(1.02)', opacity: 1, offset: 0.7 },
+      { transform: 'translateY(-70vh) rotate(-7deg) scale(.9)', opacity: 0 },
+      { transform: 'translateY(-8vh) rotate(-2deg) scale(.98)', opacity: 1, offset: 0.55 },
+      { transform: 'translateY(6px) rotate(.6deg) scale(1.005)', opacity: 1, offset: 0.85 },
       { transform: 'translateY(0) rotate(0) scale(1)', opacity: 1 },
     ],
-    { duration: 750, easing: 'cubic-bezier(.2,.8,.2,1)' },
+    { duration: 1400, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards' },
   )
-  navigator.vibrate?.([10, 40, 20])
+  navigator.vibrate?.(10)
 }

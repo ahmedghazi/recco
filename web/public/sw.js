@@ -1,5 +1,5 @@
 // Minimal offline cache: app shell + TMDB posters. Bump VERSION to force refresh.
-const VERSION = 'recco-v2'
+const VERSION = 'recco-v3'
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(['./', './manifest.webmanifest'])))
   self.skipWaiting()
@@ -38,4 +38,15 @@ self.addEventListener('fetch', (e) => {
       }),
     )
   }
+})
+
+// Tapping a notification brings the app back (or opens it)
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => 'focus' in c)
+      return open ? open.focus() : self.clients.openWindow((e.notification.data && e.notification.data.url) || './')
+    }),
+  )
 })

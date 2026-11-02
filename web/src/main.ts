@@ -2,6 +2,7 @@ import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/600.css'
 import './style.css'
 import './title-page.css'
+import './notify.css'
 import { APP_NAME } from './config'
 import { addToLibrary, libraryList, logGateway, now, onChange, save, state, uid, type LibItem, type List, type Title } from './store'
 import { hasTmdb, poster, search } from './tmdb'
@@ -10,6 +11,7 @@ import { detectAndMap } from './csv'
 import { appBase, decode, encode, payloadFile, qrDataUrl, shareUrl, buildPayload, support, type Payload } from './share'
 import { attachFling, flyIn, pickTarget, type Vec } from './fling'
 import { relay, addFriend, type IncomingHand, type Peer } from './relay'
+import { askNotify, banner, closeOverlay, notifyState, pushOverlay, systemNotify } from './notify'
 
 const app = document.getElementById('app')!
 const esc = (s: unknown) =>
@@ -313,7 +315,9 @@ function renderInbox() {
   const people = [...new Set(items.flatMap((i) => i.recos.map((r) => r.from)))]
   const filter = decodeURIComponent(route()[1] || '')
   const shown = filter ? items.filter((i) => i.recos.some((r) => r.from === filter)) : items
+  const ask = notifyState() === 'default' && Object.keys(state.friends).length > 0
   shell('inbox', `
+    ${ask ? `<div class="notify-ask"><span>Get a notification when a friend sends you something.</span><button class="sm" id="notifyOn">Turn on</button></div>` : ''}
     ${people.length ? `<div class="chips"><a href="#/inbox" class="${filter ? '' : 'on'}">All</a>${people
       .map((p) => `<a href="#/inbox/${encodeURIComponent(p)}" class="${filter === p ? 'on' : ''}">from ${esc(p)}</a>`)
       .join('')}</div>` : ''}
@@ -338,6 +342,11 @@ function renderInbox() {
       )
       .join('')}</ul>` : '<p class="empty">Nothing saved yet. Collect a few titles, or open a list someone sent you.</p>'}`)
 
+  document.getElementById('notifyOn')?.addEventListener('click', async () => {
+    const ok = await askNotify()
+    toast(ok ? 'Notifications on' : 'Blocked: add the app to your home screen first')
+    renderInbox()
+  })
   $('.lib', app)?.addEventListener('click', (e) => {
     const t = e.target as HTMLElement
     const li = t.closest<HTMLElement>('li')
@@ -613,6 +622,7 @@ async function openFling(l: List) {
     relay.setCode(null)
     stage.remove()
   }
+  pushOverlay(close)
 
   $('#codeIn', stage).addEventListener('input', (e) => {
     const v = (e.target as HTMLInputElement).value.toUpperCase().replace(/[^A-Z]/g, '')
@@ -626,7 +636,7 @@ async function openFling(l: List) {
   stage.addEventListener('click', async (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('button')
     if (!b) return
-    if (b.classList.contains('x')) return close()
+    if (b.classList.contains('x')) return closeOverlay()
     if (b.classList.contains('peer')) return sendTo(b)
     const a = b.dataset.a
     if (a === 'code') {
@@ -718,13 +728,17 @@ function keepPayload(p: Payload, channel: string, ref = '') {
 }
 
 // ---------- incoming over the air ----------
-function showIncoming(m: IncomingHand) {
+async function showIncoming(m: IncomingHand) {
   const p = m.payload
   if (!p || p.v !== 1 || !Array.isArray(p.items)) return
   p.from = m.from.name
   p.fid = m.from.id
   const friend = !!state.friends[m.from.id]
   if (friend) keepPayload(p, 'nearby', m.ref)
+  const what = p.items.length === 1 ? p.items[0].t : `${p.list.name} · ${titles(p.items.length)}`
+  // app on screen: banner + chime first, then the cards. App in background: system notification.
+  if (document.visibilityState === 'visible') await banner(`${m.from.name} sent you`, what)
+  else systemNotify(`${m.from.name} sent you`, what, `recco-${m.ref}`)
   document.querySelector('.incoming-ov')?.remove()
   const ov = document.createElement('div')
   ov.className = 'stage incoming-ov'
@@ -739,22 +753,36 @@ function showIncoming(m: IncomingHand) {
       ${friend
         ? `<p class="muted">Saved.</p><button class="big wide" data-a="open">Open saved</button>`
         : `<div class="row"><button class="big" data-a="keep">${p.items.length === 1 ? 'Save' : 'Save all'}</button><button class="ghost big" data-a="decline">Decline</button></div><p class="muted">Saving makes ${esc(m.from.name)} a friend: next time, titles arrive directly.</p>`}
+      ${notifyState() === 'default' ? '<button class="ghost sm" data-a="notify">Notify me next time</button>' : ''}
     </div>`
   document.body.append(ov)
-  ov.querySelectorAll<HTMLElement>('.rc').forEach((el, i) => setTimeout(() => flyIn(el), i * 90))
+  pushOverlay(() => ov.remove())
+  ov.querySelectorAll<HTMLElement>('.rc').forEach((el, i) => {
+    el.style.opacity = '0'
+    setTimeout(() => flyIn(el), 150 + i * 280)
+  })
   logGateway('nearby-in', `${p.list.name} from ${m.from.name}${friend ? ' · auto-kept' : ''}`)
   ov.addEventListener('click', (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('button')
     if (!b) return
     const a = b.dataset.a
+    if (a === 'notify') {
+      askNotify().then((ok) => {
+        toast(ok ? 'Notifications on' : 'Notifications blocked: add the app to your home screen first')
+        if (ok) b.remove()
+      })
+      return
+    }
     if (a === 'keep') {
       keepPayload(p, 'nearby', m.ref)
       toast(`Saved · ${m.from.name} is now a friend`)
     }
     if (a === 'decline') relay.ack(m.from.id, m.ref, false)
-    if (a === 'open' || a === 'keep') location.hash = `#/inbox/${encodeURIComponent(m.from.name)}`
-    ov.remove()
-    render()
+    const goTo = a === 'open' || a === 'keep' ? `#/inbox/${encodeURIComponent(m.from.name)}` : null
+    closeOverlay(() => {
+      if (goTo) location.hash = goTo
+      render()
+    })
   })
 }
 
@@ -784,6 +812,7 @@ function renderGateways() {
         ${row('Clipboard read', support.clipboardRead(), ios ? 'iOS asks each time' : '')}
         ${row('Compressed links', support.compression(), 'shorter links & QR')}
         ${row('TMDB search', hasTmdb(), hasTmdb() ? '' : 'add a key below')}
+        ${row('Notifications', notifyState() === 'granted', notifyState() === 'unsupported' ? (ios ? 'add to home screen first' : 'not supported here') : notifyState() === 'denied' ? 'blocked in settings' : notifyState() === 'granted' ? 'when the app is in the background' : 'tap “Turn on notifications” below')}
         ${row('Relay (nearby)', relay.status === 'on', relay.status === 'on' ? `${relay.peers.length} around · network ${relay.net || '…'} (same wifi = same 4 characters)` : 'not connected')}
       </table>
     </section>
@@ -815,6 +844,7 @@ function renderGateways() {
     <section class="card">
       <h3>Try a gateway</h3>
       <div class="row wrap">
+        <button class="ghost" data-t="notify">Turn on notifications</button>
         <button class="ghost" data-t="demo">Receive a demo list</button>
         <button class="ghost" data-t="st">Simulate share-target</button>
         <button class="ghost" data-t="reset">Reset all data</button>
@@ -844,6 +874,11 @@ function renderGateways() {
   })
   app.querySelector('.row.wrap')!.addEventListener('click', async (e) => {
     const t = (e.target as HTMLElement).dataset.t
+    if (t === 'notify') {
+      const ok = await askNotify()
+      toast(ok ? 'Notifications on' : 'Blocked: on iPhone, add the app to your home screen first')
+      return renderGateways()
+    }
     if (t === 'demo') {
       const demo: Payload = {
         v: 1,
