@@ -3,7 +3,7 @@
   "short_name": "Recco",
   "description": "Collect films and series, send your Top 5 to friends.",
   "id": "./",
-  "start_url": "./#/collect",
+  "start_url": "./#/inbox",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

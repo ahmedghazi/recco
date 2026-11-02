@@ -78,7 +78,7 @@ async function handleIncoming() {
   const title = p.get('title') || ''
   if (url || text || title) {
     const gw = p.has('add') ? 'bookmarklet' : 'share-target'
-    history.replaceState(null, '', location.pathname + '#/collect')
+    history.replaceState(null, '', location.pathname + '#/inbox')
     logGateway(gw, [title, text, url].filter(Boolean).join(' · ').slice(0, 140))
     await collectFrom({ url, text, title }, gw)
   }
@@ -1128,7 +1128,10 @@ async function render() {
   if (screen === 't' && a) return renderTitle(decodeURIComponent(a))
   if (screen === 'inbox') return renderInbox()
   if (screen === 'gateways') return renderGateways()
-  return renderCollect()
+  if (screen === 'collect') return renderCollect()
+  // home is Saved (also right after onboarding)
+  if (location.hash !== '#/inbox') history.replaceState(null, '', location.pathname + location.search + '#/inbox')
+  return renderInbox()
 }
 
 // Re-render on data change, except while a receive screen or the fling stage is open
