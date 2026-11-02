@@ -1,14 +1,17 @@
-/* Title page: one film / series / podcast, with Send as the main action */
-.tpage { display: grid; gap: calc(var(--u) * 3); }
+/* Title page: one film / series / podcast / album…, with Send as the main action */
+.tpage { display: grid; gap: 24px; }
 /* phone: title, note and Send first; the card below is the preview of what they'll receive */
 .tp-meta { order: 1; }
 .tp-card { order: 2; width: min(220px, 60vw); }
-.tp-card::before { content: 'What they receive'; display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--mid); margin-bottom: var(--u); }
-.tp-meta h2 { margin-bottom: calc(var(--u) * 2); }
-.tp-meta label { margin-top: calc(var(--u) * 2); }
-.tp-meta .acts { margin-top: calc(var(--u) * 2); }
-.recos { list-style: none; padding: 0; border-top: 1px solid var(--rule); }
-.recos li { padding: var(--u) 0; border-bottom: 1px solid var(--soft); }
+.tp-card::before { content: 'What they receive'; display: block; font-size: 13px; color: var(--mid); margin-bottom: 8px; }
+.tp-type { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.tp-type select { font-size: 13px; padding: 4px 24px 4px 8px; }
+.tp-meta h2 { margin-bottom: 16px; outline: none; border-bottom: 1px dashed transparent; }
+.tp-meta h2:focus { border-color: var(--rule); }
+.tp-meta label { margin-top: 16px; }
+.tp-meta .acts { margin-top: 16px; }
+.recos { list-style: none; padding: 0; border-top: 1px solid var(--line); }
+.recos li { padding: 8px 0; border-bottom: 1px solid var(--line); }
 .tlink { text-decoration: none; }
-.ext { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; text-decoration: none; border: 1px solid var(--rule); padding: 4px 8px; }
+.ext { font-size: 13px; text-decoration: none; border: 1px solid var(--rule); border-radius: 4px; padding: 5px 10px; }
 @media (min-width: 640px) { .tpage { grid-template-columns: 260px 1fr; align-items: start; } .tp-card { order: 0; width: 260px; } }

@@ -2,7 +2,7 @@
 
 An installable web app for testing the collect and share gateways before building anything native. No backend: data lives on the device, and shared lists travel inside the link.
 
-Design: Swiss, black and white, one typeface (IBM Plex Mono, bundled so it works offline). Each title is shown as a card; a list is a small stack you send.
+Design: Are.na-inspired (`src/arena.css`): one Arial-like sans, white and grey, square blocks, green for what's live (people around). Navigation is a burger menu. `src/style.css` (the earlier mono/Swiss look) is no longer imported.
 
 The name is a placeholder. Change it in `src/config.ts`, `public/manifest.webmanifest` and `index.html`.
 

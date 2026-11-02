@@ -1,4 +1,4 @@
-import { state, type Media, type Title, titleKey } from './store'
+import { state, type TmdbMedia as Media, type Title, titleKey } from './store'
 
 const API = 'https://api.themoviedb.org/3'
 export const IMG = 'https://image.tmdb.org/t/p/'

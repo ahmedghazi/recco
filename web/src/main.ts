@@ -1,10 +1,8 @@
-import '@fontsource/ibm-plex-mono/400.css'
-import '@fontsource/ibm-plex-mono/600.css'
-import './style.css'
+import './arena.css'
 import './title-page.css'
 import './notify.css'
 import { APP_NAME } from './config'
-import { addToLibrary, libraryList, logGateway, now, onChange, save, state, uid, type LibItem, type List, type Title } from './store'
+import { addToLibrary, libraryList, logGateway, MEDIA, mediaLabel, now, onChange, save, state, uid, type LibItem, type List, type Media, type Title } from './store'
 import { hasTmdb, poster, search } from './tmdb'
 import { parseShared, resolve } from './resolve'
 import { detectAndMap } from './csv'
@@ -35,7 +33,6 @@ function posterHtml(t: Pick<Title, 'title' | 'poster' | 'year'>, size = 'w342') 
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const titles = (n: number) => `${pad(n)} ${n === 1 ? 'title' : 'titles'}`
-const mediaLabel = (m?: string) => (m === 'tv' ? 'Series' : m === 'podcast' ? 'Podcast' : m === 'music' ? 'Music' : 'Film')
 
 interface CardData {
   title: string
@@ -95,13 +92,14 @@ async function handleIncoming() {
   })
 }
 
-async function collectFrom(input: { url?: string; text?: string; title?: string }, source: string, toldBy?: string) {
+async function collectFrom(input: { url?: string; text?: string; title?: string }, source: string, toldBy?: string, type?: Media) {
   const parsed = parseShared(input)
   if (!parsed) {
     toast('Nothing recognisable in that')
     logGateway(source, 'unrecognised input', false)
     return
   }
+  if (type) parsed.media = type // picked by hand: films/series still go through TMDB, the rest doesn't
   const { title, candidates } = await resolve(parsed)
   const reco = toldBy ? { from: toldBy, at: now(), channel: 'told' } : undefined
   const item = addToLibrary(title, `${source}:${parsed.source}`, reco)
@@ -152,18 +150,133 @@ async function openPayloadFile(f: File, gw: string) {
 }
 
 // ---------- screens ----------
+const SCREENS = [
+  { id: 'collect', label: 'Collect', hint: 'search, paste, import' },
+  { id: 'lists', label: 'Lists', hint: 'top 5s and more' },
+  { id: 'inbox', label: 'Saved', hint: 'everything you kept' },
+  { id: 'gateways', label: 'Settings', hint: 'name, notifications, gateways' },
+]
+
 function shell(active: string, body: string) {
-  const tab = (id: string, n: string, label: string) =>
-    `<a href="#/${id}" class="${active === id ? 'on' : ''}"><span>${n}</span>${label}</a>`
+  const here = SCREENS.find((x) => x.id === active)?.label
   app.innerHTML = `
-    <header class="top"><h1>${APP_NAME}</h1><span class="tag">Test build</span></header>
-    <main>${body}</main>
-    <nav class="tabs">
-      ${tab('collect', '01', 'Collect')}
-      ${tab('lists', '02', 'Lists')}
-      ${tab('inbox', '03', 'Saved')}
-      ${tab('gateways', '04', 'Gateways')}
-    </nav>`
+    <header class="top">
+      <a class="brand" href="#/inbox">${APP_NAME}</a>${here ? `<span class="here">/ ${here}</span>` : ''}
+      <button class="around-pill" id="aroundPill" aria-label="People around"></button>
+      <button class="burger" id="burger" aria-label="Menu"><i></i><i></i><i></i></button>
+    </header>
+    ${installBannerHtml()}
+    <main>${body}</main>`
+  $('#burger').addEventListener('click', () => openMenu(active))
+  $('#aroundPill').addEventListener('click', openAroundSheet)
+  document.getElementById('installGo')?.addEventListener('click', openInstall)
+  document.getElementById('installNo')?.addEventListener('click', () => {
+    try { localStorage.setItem('recco:install-dismissed', '1') } catch {}
+    document.querySelector('.install-bar')?.remove()
+  })
+  updatePill()
+}
+
+/** Green "3 around" in the header, live from the relay. */
+function updatePill() {
+  const el = document.getElementById('aroundPill')
+  if (!el) return
+  const n = relay.peers.length
+  el.classList.toggle('live', n > 0)
+  el.textContent = !state.me.name || relay.status !== 'on' ? '' : n ? `${n} around` : 'nobody around'
+}
+relay.onPeers(updatePill)
+
+function openMenu(active: string) {
+  const m = document.createElement('div')
+  m.className = 'menu'
+  const canInstall = !support.standalone()
+  m.innerHTML = `
+    <div class="menu-top"><span class="brand">${APP_NAME}</span><button data-close>Close</button></div>
+    <nav>${SCREENS.map((x) => `<a href="#/${x.id}" class="${x.id === active ? 'on' : ''}">${x.label}<span>${x.hint}</span></a>`).join('')}
+      ${canInstall ? `<a href="#" data-install>Add to home screen<span>install the app</span></a>` : ''}
+    </nav>
+    <p class="menu-foot">${esc(state.me.name)} · ${relay.status === 'on' ? `online · ${relay.peers.length} around` : 'offline'}</p>`
+  document.body.append(m)
+  pushOverlay(() => m.remove())
+  m.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement
+    const a = t.closest<HTMLAnchorElement>('a')
+    if (t.closest('[data-close]')) return closeOverlay()
+    if (!a) return
+    e.preventDefault()
+    if (a.hasAttribute('data-install')) return closeOverlay(openInstall)
+    const to = a.getAttribute('href')!
+    closeOverlay(() => (location.hash === to ? render() : (location.hash = to)))
+  })
+}
+
+function openAroundSheet() {
+  const peers = relay.peers
+  const how = { network: 'same wifi', online: 'online', code: 'code' } as const
+  const sh = document.createElement('div')
+  sh.className = 'sheet'
+  sh.innerHTML = `<div class="sheet-card">
+    <h3>${peers.length ? `${peers.length} around` : 'Nobody around'}</h3>
+    ${peers.length
+      ? `<ul class="peer-list">${peers.map((p) => `<li>${esc(p.name)}<span>${p.friend ? 'friend · ' : ''}${how[p.how]}</span></li>`).join('')}</ul>
+         <p class="muted">Open a title or a list and tap Send.</p>`
+      : `<p class="muted">Friends show up when their app is open. People on the same wifi too, or use a code from the Send screen.</p>`}
+    <button class="ghost wide" data-close>Close</button></div>`
+  document.body.append(sh)
+  pushOverlay(() => sh.remove())
+  sh.addEventListener('click', (e) => {
+    if (e.target === sh || (e.target as HTMLElement).closest('[data-close]')) closeOverlay()
+  })
+}
+
+// ---------- install: one tap on Android/desktop Chrome, guided on iPhone ----------
+let installPrompt: any = null
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  installPrompt = e
+  if (document.querySelector('.top') && !document.querySelector('.install-bar')) render()
+})
+window.addEventListener('appinstalled', () => {
+  installPrompt = null
+  document.querySelector('.install-bar')?.remove()
+})
+
+function installBannerHtml() {
+  let dismissed = false
+  try { dismissed = localStorage.getItem('recco:install-dismissed') === '1' } catch {}
+  if (support.standalone() || dismissed || !state.me.name) return ''
+  if (!installPrompt && !support.ios()) return ''
+  return `<div class="install-bar"><span>Put ${APP_NAME} on your home screen: it opens like an app and can notify you.</span>
+    <button class="sm" id="installGo">${installPrompt ? 'Install' : 'How'}</button><button class="sm ghost" id="installNo" aria-label="Dismiss">×</button></div>`
+}
+
+function openInstall() {
+  if (installPrompt) {
+    installPrompt.prompt()
+    installPrompt.userChoice.finally(() => (installPrompt = null))
+    return
+  }
+  const ua = navigator.userAgent
+  const iosOther = support.ios() && /CriOS|FxiOS|EdgiOS/.test(ua)
+  const sh = document.createElement('div')
+  sh.className = 'sheet install-sheet'
+  sh.innerHTML = `<div class="sheet-card">
+    <h3>Add ${APP_NAME} to your home screen</h3>
+    ${support.ios()
+      ? `<ol class="steps">
+          <li>Tap <b>Share</b> <span class="ico">⬆︎</span> ${iosOther ? 'in the address bar menu' : 'at the bottom of Safari (on recent iOS, it’s inside the <b>···</b> button)'}.</li>
+          <li>Scroll down and tap <b>Add to Home Screen</b> <span class="ico">⊞</span>.</li>
+          <li>Tap <b>Add</b>, then open ${APP_NAME} from your home screen.</li>
+        </ol>`
+      : `<ol class="steps"><li>Open the browser menu <b>⋮</b>.</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li></ol>`}
+    <button class="ghost wide" data-close>Got it</button></div>
+    ${support.ios() && !iosOther ? '<div class="install-arrow" aria-hidden="true">↓</div>' : ''}`
+  document.body.append(sh)
+  pushOverlay(() => sh.remove())
+  sh.addEventListener('click', (e) => {
+    if (e.target === sh || (e.target as HTMLElement).closest('[data-close]')) closeOverlay()
+  })
 }
 
 function needName(): boolean {
@@ -189,6 +302,7 @@ function needName(): boolean {
 function renderCollect() {
   const bookmarklet = `javascript:location='${appBase()}?add='+encodeURIComponent(location.href)`
   shell('collect', `
+    <h2>Collect</h2>
     <section>
       <form id="searchForm" class="row">
         <input name="q" type="search" placeholder="${hasTmdb() ? 'Search films & series' : 'Add a TMDB key in Gateways to search'}" ${hasTmdb() ? '' : 'disabled'}>
@@ -199,10 +313,13 @@ function renderCollect() {
 
     <section class="card">
       <h3>Paste a link</h3>
-      <p class="muted">IMDb, Letterboxd, TMDB, Trakt, SensCritique, JustWatch — or “Title (2024)”.</p>
+      <p class="muted">Any link: IMDb, Letterboxd, Spotify, Deezer, Apple Podcasts, YouTube, SoundCloud, Bandcamp, Radio France… or “Title (2024)”.</p>
       <form id="pasteForm">
-        <textarea name="t" rows="2" placeholder="https://letterboxd.com/film/past-lives/"></textarea>
-        <input name="who" placeholder="Who told you? (optional)">
+        <textarea name="t" rows="2" placeholder="https://open.spotify.com/… or https://letterboxd.com/film/…"></textarea>
+        <div class="row">
+          <select name="type" aria-label="Type"><option value="">Type: auto</option>${MEDIA.map((m) => `<option value="${m.id}">${m.label}</option>`).join('')}</select>
+          <input name="who" placeholder="Who told you? (optional)">
+        </div>
         <div class="row">
           <button type="button" id="clip" class="ghost">Paste from clipboard</button>
           <button>Save</button>
@@ -261,7 +378,7 @@ function renderCollect() {
     const fd = new FormData(e.target as HTMLFormElement)
     const text = String(fd.get('t')).trim()
     if (!text) return
-    await collectFrom({ text }, 'paste', String(fd.get('who') || '').trim() || undefined)
+    await collectFrom({ text }, 'paste', String(fd.get('who') || '').trim() || undefined, (String(fd.get('type') || '') || undefined) as Media | undefined)
   })
 
   $('#clip').addEventListener('click', async () => {
@@ -310,64 +427,87 @@ async function importCsv(f: File) {
   toast(`Imported ${rows.length} from ${source === 'imdb' ? 'IMDb' : 'Letterboxd'}`)
 }
 
+// Saved: an Are.na-style grid of blocks, with search, type filter and sort
+const savedView = { q: '', type: '' as '' | Media, sort: 'recent' as 'recent' | 'title' | 'year' | 'from' }
+
+function sortItems(items: LibItem[], sort: string) {
+  const by = {
+    recent: (a: LibItem, b: LibItem) => b.addedAt.localeCompare(a.addedAt),
+    title: (a: LibItem, b: LibItem) => a.title.localeCompare(b.title),
+    year: (a: LibItem, b: LibItem) => (b.year || 0) - (a.year || 0),
+    from: (a: LibItem, b: LibItem) => (a.recos[0]?.from || '~').localeCompare(b.recos[0]?.from || '~'),
+  }[sort] || (() => 0)
+  return [...items].sort(by)
+}
+
+function matches(i: LibItem, q: string) {
+  if (!q) return true
+  const hay = [i.title, i.year, mediaLabel(i.media), i.myNote, ...i.recos.flatMap((r) => [r.from, r.origin, r.note])].join(' ').toLowerCase()
+  return q.toLowerCase().split(/\s+/).every((w) => hay.includes(w))
+}
+
+function blockHtml(i: LibItem) {
+  const from = i.recos.length ? `from ${i.recos.map((r) => esc(r.from)).slice(0, 2).join(', ')}${i.recos.length > 2 ? ` +${i.recos.length - 2}` : ''}` : 'added by you'
+  return `<a class="block ${i.status}" href="#/t/${encodeURIComponent(i.key)}">
+    <div class="frame">${posterHtml(i, 'w342')}</div>
+    <div class="bt">${esc(i.title)}</div>
+    <div class="bm2">${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''} · ${from}${i.status === 'watched' ? ' · watched' : ''}</div>
+  </a>`
+}
+
 function renderInbox() {
   const items = libraryList()
   const people = [...new Set(items.flatMap((i) => i.recos.map((r) => r.from)))]
-  const filter = decodeURIComponent(route()[1] || '')
-  const shown = filter ? items.filter((i) => i.recos.some((r) => r.from === filter)) : items
+  const types = MEDIA.filter((m) => items.some((i) => (i.media || 'movie') === m.id))
+  const from = decodeURIComponent(route()[1] || '')
   const ask = notifyState() === 'default' && Object.keys(state.friends).length > 0
   shell('inbox', `
     ${ask ? `<div class="notify-ask"><span>Get a notification when a friend sends you something.</span><button class="sm" id="notifyOn">Turn on</button></div>` : ''}
-    ${people.length ? `<div class="chips"><a href="#/inbox" class="${filter ? '' : 'on'}">All</a>${people
-      .map((p) => `<a href="#/inbox/${encodeURIComponent(p)}" class="${filter === p ? 'on' : ''}">from ${esc(p)}</a>`)
-      .join('')}</div>` : ''}
-    ${shown.length ? `<ul class="lib">${shown
-      .map(
-        (i) => `<li data-k="${esc(i.key)}" class="${i.status}">
-          <a href="#/t/${encodeURIComponent(i.key)}">${posterHtml(i, 'w154')}</a>
-          <div class="meta">
-            <a class="tlink" href="#/t/${encodeURIComponent(i.key)}"><b>${esc(i.title)}</b></a> <span class="muted">${i.year ?? ''}${i.media === 'tv' ? ' · series' : ''}</span>
-            ${fromLine(i)}
-            ${i.recos.filter((r) => r.note).map((r) => `<q>${esc(r.note)}</q>`).join('')}
-            ${i.resolved ? '' : `<span class="pill">unresolved${i.link ? ` · <a href="${esc(i.link)}" target="_blank" rel="noopener">link</a>` : ''}</span>`}
-            <div class="acts">
-              ${i.status === 'watched'
-                ? `<span class="stars">${[2, 4, 6, 8, 10].map((n) => `<button data-rate="${n}">${(i.rating || 0) >= n ? '■' : '□'}</button>`).join('')}</span>`
-                : '<button data-act="watched" class="ghost sm">Mark watched</button>'}
-              <button data-act="send" class="sm">Send</button>
-              <button data-act="del" class="ghost sm">Remove</button>
-            </div>
-          </div>
-        </li>`,
-      )
-      .join('')}</ul>` : '<p class="empty">Nothing saved yet. Collect a few titles, or open a list someone sent you.</p>'}`)
+    <h2>Saved</h2>
+    ${items.length ? `
+      <div class="toolbar">
+        <input type="search" id="q" placeholder="Search titles, people, notes" value="${esc(savedView.q)}" autocomplete="off">
+        <select id="sort" aria-label="Sort">
+          <option value="recent">Recent</option><option value="title">Title</option><option value="year">Year</option><option value="from">From</option>
+        </select>
+      </div>
+      ${types.length > 1 ? `<div class="chips" id="types"><button data-type="" class="${savedView.type ? '' : 'on'}">All types</button>${types
+        .map((m) => `<button data-type="${m.id}" class="${savedView.type === m.id ? 'on' : ''}">${m.label}</button>`)
+        .join('')}</div>` : ''}
+      ${people.length ? `<div class="chips"><a href="#/inbox" class="${from ? '' : 'on'}">Everyone</a>${people
+        .map((p) => `<a href="#/inbox/${encodeURIComponent(p)}" class="${from === p ? 'on' : ''}">from ${esc(p)}</a>`)
+        .join('')}</div>` : ''}
+      <p class="count" id="count"></p>
+      <div class="blocks" id="blocks"></div>`
+    : '<p class="empty">Nothing saved yet. Collect a few titles, or open something a friend sent you.</p>'}`)
 
   document.getElementById('notifyOn')?.addEventListener('click', async () => {
     const ok = await askNotify()
     toast(ok ? 'Notifications on' : 'Blocked: add the app to your home screen first')
     renderInbox()
   })
-  $('.lib', app)?.addEventListener('click', (e) => {
-    const t = e.target as HTMLElement
-    const li = t.closest<HTMLElement>('li')
-    if (!li) return
-    const item = state.library[li.dataset.k!]
-    if (t.dataset.act === 'send') {
-      // one title, no list needed: a throwaway single-item list that is never saved
-      return openFling({ id: 'single', name: item.title, items: [{ key: item.key, note: item.myNote }], createdAt: now(), single: true })
-    }
-    if (t.dataset.act === 'watched') {
-      item.status = 'watched'
-      // MVP: with a backend this pings every sender ("Tom watched your pick")
-      if (item.recos.length) toast(`${item.recos.map((r) => r.from).join(', ')} would get a ping`)
-    }
-    if (t.dataset.rate) item.rating = Number(t.dataset.rate)
-    if (t.dataset.act === 'del') {
-      delete state.library[item.key]
-      state.lists.forEach((l) => (l.items = l.items.filter((x) => x.key !== item.key)))
-    }
-    save()
+  if (!items.length) return
+
+  const draw = () => {
+    const shown = sortItems(
+      items.filter((i) => (!from || i.recos.some((r) => r.from === from)) && (!savedView.type || (i.media || 'movie') === savedView.type) && matches(i, savedView.q)),
+      savedView.sort,
+    )
+    $('#count').textContent = `${shown.length} ${shown.length === 1 ? 'block' : 'blocks'}`
+    $('#blocks').innerHTML = shown.map(blockHtml).join('') || '<p class="empty">Nothing matches.</p>'
+  }
+  const sortEl = $<HTMLSelectElement>('#sort')
+  sortEl.value = savedView.sort
+  sortEl.addEventListener('change', () => ((savedView.sort = sortEl.value as typeof savedView.sort), draw()))
+  $<HTMLInputElement>('#q').addEventListener('input', (e) => ((savedView.q = (e.target as HTMLInputElement).value), draw()))
+  document.getElementById('types')?.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-type]')
+    if (!b) return
+    savedView.type = b.dataset.type as Media | ''
+    document.querySelectorAll('#types [data-type]').forEach((x) => x.classList.toggle('on', x === b))
+    draw()
   })
+  draw()
 }
 
 // ---------- title page: one film / series / podcast, send it from here ----------
@@ -388,13 +528,16 @@ function renderTitle(key: string) {
     <div class="tpage">
       <div class="tp-card">${cardHtml({ title: i.title, year: i.year, media: i.media, poster: i.poster, note: i.myNote || i.recos.find((r) => r.note)?.note, from: i.recos[0]?.from || state.me.name, origin: i.recos[0]?.origin })}</div>
       <div class="tp-meta">
-        <p class="eyebrow">${mediaLabel(i.media)}${i.year ? ` · ${i.year}` : ''}</p>
-        <h2>${esc(i.title)}</h2>
+        <div class="tp-type">
+          <select id="tpType" aria-label="Type">${MEDIA.map((m) => `<option value="${m.id}" ${(i.media || 'movie') === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}</select>
+          ${i.year ? `<span class="muted">${i.year}</span>` : ''}
+        </div>
+        <h2 id="tpTitle" contenteditable="true" spellcheck="false" title="Tap to edit">${esc(i.title)}</h2>
         ${i.recos.length ? `<ul class="recos">${i.recos
           .map((r) => `<li><span class="from">From ${esc(r.from)}${r.origin ? ` / via ${esc(r.origin)}` : ''}</span>${r.note ? `<q>${esc(r.note)}</q>` : ''}</li>`)
           .join('')}</ul>` : ''}
         <label>Your line, sent with it
-          <input id="tpNote" maxlength="140" placeholder="One line: why watch it?" value="${esc(i.myNote)}"></label>
+          <input id="tpNote" maxlength="140" placeholder="One line: why it's worth it" value="${esc(i.myNote)}"></label>
         <button id="tpSend" class="big wide">Send</button>
         <div class="acts">
           ${i.status === 'watched'
@@ -406,6 +549,22 @@ function renderTitle(key: string) {
       </div>
     </div>`)
 
+  $('#tpType').addEventListener('change', (e) => {
+    i.media = (e.target as HTMLSelectElement).value as Media
+    save()
+    renderTitle(key)
+  })
+  $('#tpTitle').addEventListener('blur', (e) => {
+    const v = (e.target as HTMLElement).textContent!.replace(/\s+/g, ' ').trim()
+    if (v && v !== i.title) {
+      i.title = v
+      save()
+      renderTitle(key)
+    }
+  })
+  $('#tpTitle').addEventListener('keydown', (e) => {
+    if ((e as KeyboardEvent).key === 'Enter') (e.preventDefault(), (e.target as HTMLElement).blur())
+  })
   $('#tpNote').addEventListener('change', (e) => {
     i.myNote = (e.target as HTMLInputElement).value.trim() || undefined
     save()
@@ -434,23 +593,26 @@ function renderTitle(key: string) {
   })
 }
 
+// Lists: Are.na-style channels, with search (list names and titles inside) and sort
+const listsView = { q: '', sort: 'recent' as 'recent' | 'name' | 'size' }
+
 function renderLists() {
   const year = new Date().getFullYear()
   shell('lists', `
+    <h2>Lists</h2>
     <form id="newList" class="row">
       <input name="n" placeholder="List name" value="My Top 5 of ${year}">
       <select name="top"><option value="5">Top 5</option><option value="10">Top 10</option><option value="">Unranked</option></select>
       <button>New list</button>
     </form>
-    ${state.lists.length ? `<div class="lists">${state.lists
-      .map((l) => {
-        const posters = l.items.slice(0, 4).map((li) => state.library[li.key]).filter(Boolean)
-        return `<a class="list-card" href="#/list/${l.id}">
-          <div class="collage">${posters.map((p) => posterHtml(p, 'w154')).join('')}</div>
-          <b>${esc(l.name)}</b><span class="muted">${l.items.length}${l.topN ? `/${l.topN}` : ''} · ${l.from ? `from ${esc(l.from)}` : 'by you'}</span>
-        </a>`
-      })
-      .join('')}</div>` : '<p class="empty">No lists yet. A Top 5 is perfect for a dinner table.</p>'}`)
+    ${state.lists.length ? `
+      <div class="toolbar">
+        <input type="search" id="lq" placeholder="Search lists and what's in them" value="${esc(listsView.q)}" autocomplete="off">
+        <select id="lsort" aria-label="Sort"><option value="recent">Recent</option><option value="name">Name</option><option value="size">Size</option></select>
+      </div>
+      <p class="count" id="lcount"></p>
+      <div class="lists" id="lgrid"></div>`
+    : '<p class="empty">No lists yet. A Top 5 is perfect for a dinner table.</p>'}`)
   $('#newList').addEventListener('submit', (e) => {
     e.preventDefault()
     const fd = new FormData(e.target as HTMLFormElement)
@@ -459,6 +621,33 @@ function renderLists() {
     save()
     location.hash = `#/list/${l.id}`
   })
+  if (!state.lists.length) return
+
+  const draw = () => {
+    const q = listsView.q.toLowerCase().trim()
+    const shown = state.lists
+      .filter((l) => !q || [l.name, l.from, ...l.items.map((li) => state.library[li.key]?.title)].join(' ').toLowerCase().includes(q))
+      .sort(
+        listsView.sort === 'name' ? (a, b) => a.name.localeCompare(b.name)
+        : listsView.sort === 'size' ? (a, b) => b.items.length - a.items.length
+        : (a, b) => b.createdAt.localeCompare(a.createdAt),
+      )
+    $('#lcount').textContent = `${shown.length} ${shown.length === 1 ? 'list' : 'lists'}`
+    $('#lgrid').innerHTML = shown
+      .map((l) => {
+        const posters = l.items.slice(0, 4).map((li) => state.library[li.key]).filter(Boolean)
+        return `<a class="list-card" href="#/list/${l.id}">
+          <div class="collage">${posters.map((p) => posterHtml(p, 'w154')).join('')}</div>
+          <b>${esc(l.name)}</b><span class="muted">${l.from ? `by ${esc(l.from)}` : 'by you'} · ${l.items.length}${l.topN ? `/${l.topN}` : ''} ${l.items.length === 1 ? 'block' : 'blocks'}</span>
+        </a>`
+      })
+      .join('') || '<p class="empty">Nothing matches.</p>'
+  }
+  const sortEl = $<HTMLSelectElement>('#lsort')
+  sortEl.value = listsView.sort
+  sortEl.addEventListener('change', () => ((listsView.sort = sortEl.value as typeof listsView.sort), draw()))
+  $<HTMLInputElement>('#lq').addEventListener('input', (e) => ((listsView.q = (e.target as HTMLInputElement).value), draw()))
+  draw()
 }
 
 function renderList(id: string) {
@@ -472,6 +661,7 @@ function renderList(id: string) {
       <h2 contenteditable="true" id="lname">${esc(l.name)}</h2>
       <button id="share" class="big" ${l.items.length ? '' : 'disabled'}>Send</button>
     </div>
+    <p class="list-meta">${l.from ? `by ${esc(l.from)}` : 'by you'} · ${l.items.length}${l.topN ? `/${l.topN}` : ''} ${l.items.length === 1 ? 'block' : 'blocks'}</p>
     <ol class="items ${l.topN ? 'ranked' : ''}">${l.items
       .map((li, i) => {
         const t = state.library[li.key]
@@ -479,8 +669,8 @@ function renderList(id: string) {
         return `<li data-i="${i}">
           ${posterHtml(t, 'w154')}
           <div class="meta">
-            <b>${esc(t.title)}</b> <span class="muted">${t.year ?? ''}</span>
-            <input class="note" data-i="${i}" maxlength="140" placeholder="One line: why watch it?" value="${esc(li.note)}">
+            <a class="tlink" href="#/t/${encodeURIComponent(t.key)}"><b>${esc(t.title)}</b></a> <span class="muted">${mediaLabel(t.media)}${t.year ? ` · ${t.year}` : ''}</span>
+            <input class="note" data-i="${i}" maxlength="140" placeholder="One line: why it's worth it" value="${esc(li.note)}">
           </div>
           <div class="ord">
             <button data-up="${i}" ${i ? '' : 'disabled'}>↑</button>
@@ -492,12 +682,16 @@ function renderList(id: string) {
       .join('')}</ol>
     ${full ? `<p class="muted">Top ${l.topN} is full. Remove one to swap.</p>` : lib.length ? `
       <h3>Add from saved</h3>
-      <div class="grid small">${lib
-        .slice(0, 24)
-        .map((t) => `<button class="tile" data-add="${esc(t.key)}">${posterHtml(t, 'w154')}<span>${esc(t.title)}</span></button>`)
+      ${lib.length > 6 ? '<input type="search" id="addq" placeholder="Search saved" autocomplete="off">' : ''}
+      <div class="grid small" id="addgrid">${lib
+        .map((t) => `<button class="tile" data-add="${esc(t.key)}" data-s="${esc([t.title, t.year, mediaLabel(t.media), ...t.recos.map((r) => r.from)].join(' ').toLowerCase())}">${posterHtml(t, 'w154')}<span>${esc(t.title)}</span></button>`)
         .join('')}</div>` : '<p class="muted">Collect titles first, then add them here.</p>'}
     <button id="del" class="ghost">Delete list</button>`)
 
+  document.getElementById('addq')?.addEventListener('input', (e) => {
+    const q = (e.target as HTMLInputElement).value.toLowerCase().trim()
+    document.querySelectorAll<HTMLElement>('#addgrid .tile').forEach((t) => (t.hidden = !!q && !t.dataset.s!.includes(q)))
+  })
   $('#lname').addEventListener('blur', (e) => {
     l.name = (e.target as HTMLElement).textContent!.trim() || l.name
     save()
@@ -801,6 +995,7 @@ function renderGateways() {
     `<tr><td>${label}</td><td class="${ok ? 'ok' : 'no'}">${ok ? '✓' : '—'}</td><td class="muted">${note}</td></tr>`
   const ios = support.ios(), android = support.android()
   shell('gateways', `
+    <h2>Settings</h2>
     <section class="card">
       <h3>This device</h3>
       <table class="gw">

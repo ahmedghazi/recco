@@ -1,6 +1,21 @@
 // Local-first store. Everything lives in localStorage for this test build.
 
-export type Media = 'movie' | 'tv'
+export type TmdbMedia = 'movie' | 'tv'
+export type Media = TmdbMedia | 'podcast' | 'music' | 'video' | 'book' | 'article' | 'other'
+
+/** Types people can pick; order = order in menus and filters. */
+export const MEDIA: { id: Media; label: string }[] = [
+  { id: 'movie', label: 'Film' },
+  { id: 'tv', label: 'Series' },
+  { id: 'podcast', label: 'Podcast' },
+  { id: 'music', label: 'Music' },
+  { id: 'video', label: 'Video' },
+  { id: 'book', label: 'Book' },
+  { id: 'article', label: 'Article' },
+  { id: 'other', label: 'Other' },
+]
+export const mediaLabel = (m?: string) => MEDIA.find((x) => x.id === m)?.label || 'Film'
+export const isTmdbMedia = (m?: string): m is TmdbMedia => m === 'movie' || m === 'tv'
 
 export interface Title {
   key: string
