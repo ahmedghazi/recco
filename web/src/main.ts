@@ -708,7 +708,7 @@ function renderGateways() {
         ${row('Clipboard read', support.clipboardRead(), ios ? 'iOS asks each time' : '')}
         ${row('Compressed links', support.compression(), 'shorter links & QR')}
         ${row('TMDB search', hasTmdb(), hasTmdb() ? '' : 'add a key below')}
-        ${row('Relay (nearby)', relay.status === 'on', relay.status === 'on' ? `${relay.peers.length} around` : 'not connected')}
+        ${row('Relay (nearby)', relay.status === 'on', relay.status === 'on' ? `${relay.peers.length} around · network ${relay.net || '…'} (same wifi = same 4 characters)` : 'not connected')}
       </table>
     </section>
 

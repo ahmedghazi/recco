@@ -17,11 +17,30 @@ const clients = new Map()
 const isPrivate = (ip) =>
   /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::1$|fc|fd|fe80)/i.test(ip)
 
-function networkKey(req) {
+/** Expand an IPv6 address to 8 groups so prefixes compare reliably. */
+function expand6(ip) {
+  const [head, tail = ''] = ip.split('::')
+  const h = head ? head.split(':') : []
+  const t = tail ? tail.split(':') : []
+  const fill = Array(Math.max(0, 8 - h.length - t.length)).fill('0')
+  return [...h, ...fill, ...t].map((g) => g.padStart(4, '0').toLowerCase())
+}
+
+function clientIp(req) {
+  const fly = String(req.headers['fly-client-ip'] || '').trim()
   const fwd = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()
-  let ip = (fwd || req.socket.remoteAddress || '').replace(/^::ffff:/, '')
-  // On a LAN dev setup every phone has its own private IP: group by /24 instead
-  if (isPrivate(ip)) ip = ip.includes('.') ? ip.split('.').slice(0, 3).join('.') : 'local'
+  return (fly || fwd || req.socket.remoteAddress || '').replace(/^::ffff:/, '')
+}
+
+function networkKey(req) {
+  let ip = clientIp(req)
+  if (ip.includes(':')) {
+    // IPv6: every phone on the same wifi has its own address, but they share the /64 prefix
+    ip = isPrivate(ip) ? 'local6' : expand6(ip).slice(0, 4).join(':')
+  } else if (isPrivate(ip)) {
+    // LAN dev setup: every phone has its own private IP, group by /24
+    ip = ip.split('.').slice(0, 3).join('.')
+  }
   return createHash('sha256').update(SALT + ip).digest('hex').slice(0, 12)
 }
 
@@ -76,6 +95,9 @@ wss.on('connection', (ws, req) => {
         visible: m.visible === 'friends' ? 'friends' : 'network',
       }
       clients.set(me.id, me)
+      // short network id: two phones on the same wifi should show the same 4 characters
+      send(me, { t: 'welcome', net: net.slice(0, 4) })
+      console.log(`hello net=${net.slice(0, 4)} ip=v${clientIp(req).includes(':') ? 6 : 4} online=${clients.size}`)
       refreshAll()
       return
     }

@@ -38,6 +38,7 @@ let ws: WebSocket | null = null
 let retry = 0
 let peers: Peer[] = []
 let status: 'off' | 'connecting' | 'on' = 'off'
+let net = '' // short network id from the relay, for debugging "can't see each other"
 const peerListeners = new Set<Listener<Peer[]>>()
 const handListeners = new Set<Listener<IncomingHand>>()
 const ackListeners = new Set<Listener<{ from: { id: string; name: string }; kept: boolean }>>()
@@ -46,6 +47,7 @@ const pendingSends = new Map<string, (ok: boolean) => void>()
 export const relay = {
   get peers() { return peers },
   get status() { return status },
+  get net() { return net },
   onPeers(fn: Listener<Peer[]>) { peerListeners.add(fn); fn(peers); return () => peerListeners.delete(fn) },
   onHand(fn: Listener<IncomingHand>) { handListeners.add(fn) },
   onAck(fn: Listener<{ from: { id: string; name: string }; kept: boolean }>) { ackListeners.add(fn) },
@@ -71,6 +73,7 @@ export const relay = {
         // a peer flagged as friend by the other side becomes our friend too
         peerListeners.forEach((fn) => fn(peers))
       }
+      if (m.t === 'welcome') net = String(m.net || '')
       if (m.t === 'hand') handListeners.forEach((fn) => fn(m))
       if (m.t === 'ack') ackListeners.forEach((fn) => fn(m))
       if (m.t === 'delivered' || m.t === 'undelivered') {
