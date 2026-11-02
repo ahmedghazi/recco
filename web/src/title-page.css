@@ -1,6 +1,9 @@
 /* Title page: one film / series / podcast, with Send as the main action */
 .tpage { display: grid; gap: calc(var(--u) * 3); }
-.tp-card { width: min(200px, 55vw); }  /* small enough that Send stays on screen */
+/* phone: title, note and Send first; the card below is the preview of what they'll receive */
+.tp-meta { order: 1; }
+.tp-card { order: 2; width: min(220px, 60vw); }
+.tp-card::before { content: 'What they receive'; display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--mid); margin-bottom: var(--u); }
 .tp-meta h2 { margin-bottom: calc(var(--u) * 2); }
 .tp-meta label { margin-top: calc(var(--u) * 2); }
 .tp-meta .acts { margin-top: calc(var(--u) * 2); }
@@ -8,4 +11,4 @@
 .recos li { padding: var(--u) 0; border-bottom: 1px solid var(--soft); }
 .tlink { text-decoration: none; }
 .ext { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; text-decoration: none; border: 1px solid var(--rule); padding: 4px 8px; }
-@media (min-width: 640px) { .tpage { grid-template-columns: 260px 1fr; align-items: start; } .tp-card { width: 260px; } }
+@media (min-width: 640px) { .tpage { grid-template-columns: 260px 1fr; align-items: start; } .tp-card { order: 0; width: 260px; } }
