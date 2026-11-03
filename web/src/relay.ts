@@ -65,8 +65,11 @@ export const relay = {
       return scheduleReconnect()
     }
     ws.onopen = () => {
-      retry = 0
       status = 'on'
+      // only consider the link healthy once it has stayed up a while (no fast reconnect loops)
+      clearTimeout(stableTimer)
+      stableTimer = window.setTimeout(() => (retry = 0), 10_000)
+      clearTimeout(clearPeersTimer)
       hello()
     }
     ws.onmessage = (e) => {
@@ -87,8 +90,13 @@ export const relay = {
     }
     ws.onclose = () => {
       status = 'off'
-      peers = []
-      peerListeners.forEach((fn) => fn(peers))
+      clearTimeout(stableTimer)
+      // keep showing who was around for a moment: a quick reconnect shouldn't make people blink
+      clearTimeout(clearPeersTimer)
+      clearPeersTimer = window.setTimeout(() => {
+        peers = []
+        peerListeners.forEach((fn) => fn(peers))
+      }, 4000)
       scheduleReconnect()
     }
     ws.onerror = () => ws?.close()
@@ -122,9 +130,14 @@ function hello() {
   ws?.send(JSON.stringify({ t: 'hello', id: state.me.id, name: state.me.name, friends: Object.keys(state.friends), visible: state.visible }))
 }
 
+let stableTimer = 0
+let clearPeersTimer = 0
+let reconnectTimer = 0
 function scheduleReconnect() {
-  const delay = Math.min(15000, 500 * 2 ** retry++)
-  setTimeout(() => relay.connect(), delay)
+  // backoff with jitter: 0.5s, 1s, 2s… up to 15s
+  const delay = Math.min(15000, 500 * 2 ** retry++) * (0.75 + Math.random() * 0.5)
+  clearTimeout(reconnectTimer)
+  reconnectTimer = window.setTimeout(() => relay.connect(), delay)
 }
 
 // Reconnect immediately when the app comes back to the foreground
