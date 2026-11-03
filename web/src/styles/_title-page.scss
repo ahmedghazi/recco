@@ -5,8 +5,8 @@
 .tpage > * { min-width: 0; }
 /* phone: title, note and Send first; the card below is the preview of what they'll receive */
 .tp-meta { order: 1; }
-.tp-card { order: 2; width: min(220px, 60vw); }
-.tp-card::before { content: 'What they receive'; display: block; font-size: var(--fs-s); color: var(--mid); margin-bottom: 8px; }
+.tp-card { order: 2; width: min(220px, 60vw); justify-self: center; }  /* centered in its section */
+.tp-card::before { content: 'What they receive'; display: block; text-align: center; font-size: var(--fs-s); color: var(--mid); margin-bottom: 8px; }
 .tp-type { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
 .tp-type select { font-size: var(--fs-s); padding: 4px 24px 4px 8px; }
 .tp-meta h2 { margin-bottom: 16px; outline: none; border-bottom: 1px dashed transparent; }

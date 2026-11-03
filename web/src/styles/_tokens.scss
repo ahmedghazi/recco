@@ -19,6 +19,14 @@
   --scrim: rgba(0, 0, 0, .25);   /* behind bottom sheets */
   --media-bg: #000;      /* behind trailers */
 
+  /* ---------- the card that gets sent: inverted, so it stands out from the page ---------- */
+  --card-bg: #141414;
+  --card-fg: #d6d6d6;
+  --card-strong: #fff;
+  --card-mid: #8c8c8c;
+  --card-line: #2c2c2c;
+  --card-soft: #222;
+
   /* ---------- type ---------- */
   --font: Arial, 'Helvetica Neue', Helvetica, sans-serif;
   --mono: ui-monospace, Menlo, monospace;
@@ -92,6 +100,13 @@
     --rule: #333;
     --soft: #1b1b1b;
     --accent: #3ccf35;
+    /* dark page → light card */
+    --card-bg: #f6f6f6;
+    --card-fg: #333;
+    --card-strong: #111;
+    --card-mid: #8a8a8a;
+    --card-line: #ddd;
+    --card-soft: #e8e8e8;
     color-scheme: dark;
   }
 }

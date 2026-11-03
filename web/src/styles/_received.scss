@@ -3,6 +3,9 @@
 .received h2 { margin-bottom: 16px; }
 .row-cards { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px 20px; padding: 4px 16px 12px; scrollbar-width: none; }
 .row-cards .rc { flex: none; width: min(230px, 64vw); scroll-snap-align: center; display: flex; }
+/* centered when they fit, scrollable when they don't */
+.row-cards .rc:first-child { margin-left: auto; }
+.row-cards .rc:last-child { margin-right: auto; }
 .received > .muted { margin-top: 12px; font-size: var(--fs-s); }
 .incoming-ov { align-items: stretch; touch-action: auto; overflow-y: auto; }
 .ov-body { padding-top: 16px; }
