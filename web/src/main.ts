@@ -49,14 +49,23 @@ interface CardData {
   rank?: number
   total?: number
   rarity?: number // how many people dealt it
+  score?: string // "IMDb 7.8" (or "TMDB 7.6" when IMDb isn't known)
+}
+
+/** "IMDb 7.8" from saved ratings, else "TMDB 7.6". */
+function cardScore(i?: LibItem): string | undefined {
+  const r = i?.details?.ratings || []
+  const pick = r.find((x) => x.source === 'IMDb') || r.find((x) => x.source === 'TMDB')
+  return pick ? `${pick.source} ${pick.value}` : undefined
 }
 
 /** A title card: one title, one note, who it's from. */
 function cardHtml(c: CardData) {
   return `<article class="tcard">
-    <header><span>${c.rank ? `${pad(c.rank)}/${pad(c.total || c.rank)}` : '—'}</span><span>${mediaLabel(c.media)}</span><span>${c.year ?? ''}</span></header>
+    <header><span>${c.rank ? `${pad(c.rank)}/${pad(c.total || c.rank)}` : '—'}</span><span>${mediaLabel(c.media)}</span></header>
     <div class="art">${posterHtml({ title: c.title, poster: c.poster, image: c.image }, 'w500')}</div>
     <h4>${esc(c.title)}</h4>
+    ${c.year || c.score ? `<p class="cmeta">${c.year ? `<span>${c.year}</span>` : ''}${c.score ? `<span class="cscore">${esc(c.score)}</span>` : ''}</p>` : ''}
     <p class="cnote">${c.note ? esc(c.note) : '&nbsp;'}</p>
     <footer><span>From ${esc(c.from)}${c.origin ? ` / via ${esc(c.origin)}` : ''}</span></footer>
   </article>`
@@ -550,7 +559,7 @@ function renderTitle(key: string) {
   shell('inbox', `
     <a href="#/inbox" class="back">← Saved</a>
     <div class="tpage">
-      <div class="tp-card">${cardHtml({ title: i.title, year: i.year, media: i.media, poster: i.poster, image: i.image, note: i.myNote || i.recos.find((r) => r.note)?.note, from: i.recos[0]?.from || state.me.name, origin: i.recos[0]?.origin })}</div>
+      <div class="tp-card">${cardHtml({ title: i.title, year: i.year, media: i.media, poster: i.poster, image: i.image, score: cardScore(i), note: i.myNote || i.recos.find((r) => r.note)?.note, from: i.recos[0]?.from || state.me.name, origin: i.recos[0]?.origin })}</div>
       <div class="tp-meta">
         <div class="tp-type">
           <select id="tpType" aria-label="Type">${MEDIA.map((m) => `<option value="${m.id}" ${(i.media || 'movie') === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}</select>
@@ -976,7 +985,7 @@ async function openFling(l: List) {
       const t = state.library[li.key]
       if (!t) return ''
       const origin = t.recos.find((r) => r.from !== state.me.name)?.from
-      return `<div class="hc" style="--i:${i}">${cardHtml({ title: t.title, year: t.year, media: t.media, poster: t.poster, image: t.image, note: li.note, from: state.me.name, origin, rank: l.topN ? i + 1 : undefined, total: l.items.length, rarity: t.recos.length + 1 })}</div>`
+      return `<div class="hc" style="--i:${i}">${cardHtml({ title: t.title, year: t.year, media: t.media, poster: t.poster, image: t.image, score: cardScore(t), note: li.note, from: state.me.name, origin, rank: l.topN ? i + 1 : undefined, total: l.items.length, rarity: t.recos.length + 1 })}</div>`
     })
     .reverse()
     .join('')
@@ -1139,7 +1148,7 @@ function renderReceived(p: Payload, channel: string) {
       <p class="eyebrow">${esc(p.from)} sent you ${titles(p.items.length)}</p>
       <h2>${esc(p.list.name)}</h2>
       <div class="row-cards" id="incoming">${p.items
-        .map((it, i) => `<div class="rc">${cardHtml({ title: it.t, year: it.y, media: it.m, poster: it.p, image: it.g, note: it.n, from: p.from, origin: it.o, rank: p.list.topN ? i + 1 : undefined, total: p.items.length, rarity: it.o ? 2 : 1 })}</div>`)
+        .map((it, i) => `<div class="rc">${cardHtml({ title: it.t, year: it.y, media: it.m, poster: it.p, image: it.g, score: it.s, note: it.n, from: p.from, origin: it.o, rank: p.list.topN ? i + 1 : undefined, total: p.items.length, rarity: it.o ? 2 : 1 })}</div>`)
         .join('')}</div>
       ${mine ? '<p class="muted">Your own list. This is what your friends see.</p>' : ''}
       <button id="keep" class="big wide">${p.items.length === 1 ? 'Save' : `Save all ${pad(p.items.length)}`}</button>
@@ -1200,7 +1209,7 @@ async function showIncoming(m: IncomingHand) {
       <p class="eyebrow">${esc(m.from.name)} sent you</p>
       <h2>${esc(p.list.name)}</h2>
       <div class="row-cards">${p.items
-        .map((it, i) => `<div class="rc">${cardHtml({ title: it.t, year: it.y, media: it.m, poster: it.p, image: it.g, note: it.n, from: m.from.name, origin: it.o, rank: p.list.topN ? i + 1 : undefined, total: p.items.length, rarity: it.o ? 2 : 1 })}</div>`)
+        .map((it, i) => `<div class="rc">${cardHtml({ title: it.t, year: it.y, media: it.m, poster: it.p, image: it.g, score: it.s, note: it.n, from: m.from.name, origin: it.o, rank: p.list.topN ? i + 1 : undefined, total: p.items.length, rarity: it.o ? 2 : 1 })}</div>`)
         .join('')}</div>
       ${friend
         ? `<p class="muted">Saved.</p><button class="big wide" data-a="open">Open saved</button>`

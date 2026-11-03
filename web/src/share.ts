@@ -13,6 +13,7 @@ export interface PayloadItem {
   l?: string // original link (music, podcasts, videos…)
   n?: string // note
   o?: string // origin: who told the sender
+  s?: string // score shown on the card, e.g. "IMDb 7.8"
 }
 
 export interface Payload {
@@ -34,7 +35,9 @@ export function buildPayload(list: List): Payload {
         const t = state.library[li.key]
         if (!t) return null
         const origin = t.recos.find((r) => r.from !== state.me.name)?.from
-        const it: PayloadItem = { t: t.title, y: t.year, m: t.media, i: t.tmdbId, im: t.imdbId, p: t.poster, g: t.image, l: t.tmdbId ? undefined : t.link, n: li.note, o: origin }
+        const rr = t.details?.ratings || []
+        const sc = rr.find((x) => x.source === 'IMDb') || rr.find((x) => x.source === 'TMDB')
+        const it: PayloadItem = { t: t.title, y: t.year, m: t.media, i: t.tmdbId, im: t.imdbId, p: t.poster, g: t.image, l: t.tmdbId ? undefined : t.link, n: li.note, o: origin, s: sc ? `${sc.source} ${sc.value}` : undefined }
         return Object.fromEntries(Object.entries(it).filter(([, v]) => v !== undefined && v !== '')) as PayloadItem
       })
       .filter(Boolean) as PayloadItem[],
