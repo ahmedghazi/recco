@@ -1,22 +1,22 @@
 // Inputs, selects, buttons
 
 input, textarea, select, button { font: inherit; color: inherit; }
-input, textarea, select { width: 100%; background: var(--bg); border: 1px solid var(--rule); border-radius: var(--r); padding: 9px 10px; outline: none; -webkit-appearance: none; appearance: none; font-size: var(--fs-input); }
-select { width: auto; padding-right: 26px; background-image: linear-gradient(45deg, transparent 50%, var(--mid) 50%), linear-gradient(135deg, var(--mid) 50%, transparent 50%); background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%; background-size: 5px 5px; background-repeat: no-repeat; font-size: var(--fs-m); }
+input, textarea, select { width: 100%; background: var(--bg); border: 0.0625rem solid var(--rule); border-radius: var(--r); padding: 0.5625rem 0.625rem; outline: none; -webkit-appearance: none; appearance: none; font-size: var(--fs-input); }
+select { width: auto; padding-right: 1.625rem; background-image: linear-gradient(45deg, transparent 50%, var(--mid) 50%), linear-gradient(135deg, var(--mid) 50%, transparent 50%); background-position: calc(100% - 0.875rem) 52%, calc(100% - 0.5625rem) 52%; background-size: 0.3125rem 0.3125rem; background-repeat: no-repeat; font-size: var(--fs-m); }
 input:focus, textarea:focus, select:focus { border-color: var(--fg); }
 input::placeholder, textarea::placeholder { color: var(--mid); }
 textarea { resize: vertical; }
-form > input, form > textarea, form > select { margin-bottom: 8px; }
-label { display: block; font-size: var(--fs-s); color: var(--mid); margin-bottom: 12px; }
-label input, label select { margin-top: 4px; color: var(--fg); }
-button { background: var(--strong); color: var(--bg); border: 1px solid var(--strong); border-radius: var(--r); padding: 9px 14px; font-size: var(--fs-m); cursor: pointer; white-space: nowrap; }
+form > input, form > textarea, form > select { margin-bottom: 0.5rem; }
+label { display: block; font-size: var(--fs-s); color: var(--mid); margin-bottom: 0.75rem; }
+label input, label select { margin-top: 0.25rem; color: var(--fg); }
+button { background: var(--strong); color: var(--bg); border: 0.0625rem solid var(--strong); border-radius: var(--r); padding: 0.5625rem 0.875rem; font-size: var(--fs-m); cursor: pointer; white-space: nowrap; }
 button:disabled { opacity: .35; cursor: default; }
 button.ghost { background: var(--bg); color: var(--fg); border-color: var(--rule); }
 button.ghost:hover { border-color: var(--fg); }
-button.sm { padding: 5px 10px; font-size: var(--fs-s); }
-button.big { padding: 12px 20px; font-size: var(--fs-base); }
+button.sm { padding: 0.3125rem 0.625rem; font-size: var(--fs-s); }
+button.big { padding: 0.75rem 1.25rem; font-size: var(--fs-base); }
 button.wide { width: 100%; }
-.row { display: flex; gap: 8px; align-items: center; }
+.row { display: flex; gap: 0.5rem; align-items: center; }
 /* inputs, selects and buttons that sit side by side share one height (--control-h) */
 :is(.row, .toolbar) > :is(input:not([type=checkbox]):not([type=radio]), select, button:not(.sm)) {
   height: var(--control-h); padding-top: 0; padding-bottom: 0; line-height: 1; margin: 0;
@@ -24,9 +24,9 @@ button.wide { width: 100%; }
 :is(.row, .toolbar) > button:not(.sm) { display: inline-flex; align-items: center; justify-content: center; }
 .row > input { flex: 1; }
 .row.wrap { flex-wrap: wrap; }
-.file { display: inline-block; margin: 0 8px 8px 0; }
+.file { display: inline-block; margin: 0 0.5rem 0.5rem 0; }
 .file input { display: none; }
-.file span { display: inline-block; border: 1px solid var(--rule); border-radius: var(--r); padding: 8px 12px; font-size: var(--fs-m); color: var(--fg); cursor: pointer; }
+.file span { display: inline-block; border: 0.0625rem solid var(--rule); border-radius: var(--r); padding: 0.5rem 0.75rem; font-size: var(--fs-m); color: var(--fg); cursor: pointer; }
 .ways { list-style: none; padding: 0; }
-.ways li { padding: 8px 0; border-bottom: 1px solid var(--line); }
-.bm { text-decoration: none; border: 1px solid var(--rule); border-radius: var(--r); padding: 2px 8px; }
+.ways li { padding: 0.5rem 0; border-bottom: 0.0625rem solid var(--line); }
+.bm { text-decoration: none; border: 0.0625rem solid var(--rule); border-radius: var(--r); padding: 0.125rem 0.5rem; }

@@ -1,14 +1,14 @@
 // Bottom sheets, toasts, onboarding
 
 .sheet { position: fixed; inset: 0; z-index: 30; background: var(--scrim); display: flex; align-items: flex-end; }
-.sheet-card { width: 100%; background: var(--bg); border-radius: var(--r-sheet) 12px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); }
-.cand { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0; }
+.sheet-card { width: 100%; background: var(--bg); border-radius: var(--r-sheet) 0.75rem 0 0; padding: 1.125rem 1rem calc(1.125rem + env(safe-area-inset-bottom)); }
+.cand { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin: 0.75rem 0; }
 .cand button { background: none; color: var(--fg); border: 0; padding: 0; font-size: var(--fs-2xs); white-space: normal; text-align: left; border-radius: 0; }
 .cand em { color: var(--mid); font-style: normal; }
-.peer-list { list-style: none; padding: 0; margin: 8px 0 12px; }
-.peer-list li { padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+.peer-list { list-style: none; padding: 0; margin: 0.5rem 0 0.75rem; }
+.peer-list li { padding: 0.5rem 0; border-bottom: 0.0625rem solid var(--line); display: flex; justify-content: space-between; }
 .peer-list li span { color: var(--mid); font-size: var(--fs-s); }
-.toast { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); background: var(--strong); color: var(--bg); padding: 11px 14px; border-radius: var(--r); z-index: 60; font-size: var(--fs-m); transition: opacity .2s; }
+.toast { position: fixed; left: 1rem; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom)); background: var(--strong); color: var(--bg); padding: 0.6875rem 0.875rem; border-radius: var(--r); z-index: 60; font-size: var(--fs-m); transition: opacity .2s; }
 .toast.out { opacity: 0; }
 .hero { padding-top: 14vh; }
 .hero h2 { font-size: var(--fs-h1); max-width: 16ch; }

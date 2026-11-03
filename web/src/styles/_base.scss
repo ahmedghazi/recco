@@ -1,7 +1,9 @@
 // Base: reset, page, type, keyframes
 
 * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
-html, body { background: var(--bg); color: var(--fg); font: var(--fs-base)/var(--lh) var(--font); -webkit-font-smoothing: antialiased; }
+/* the root stays at the browser default (16px) so 1rem = 16px everywhere; the body text size is set on body */
+html { background: var(--bg); }
+body { background: var(--bg); color: var(--fg); font: var(--fs-base)/var(--lh) var(--font); -webkit-font-smoothing: antialiased; }
 body { min-height: 100dvh; overscroll-behavior-y: none; padding-bottom: env(safe-area-inset-bottom); }
 a { color: inherit; }
 b, strong { font-weight: var(--fw-bold); color: var(--strong); }
@@ -9,15 +11,15 @@ h1, h2, h3, h4 { font-weight: var(--fw-title); color: var(--strong); }
 h2 { font-size: var(--fs-h2); line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 calc(var(--u) * 2); }
 h3 { font-size: var(--fs-base); font-weight: var(--fw-bold); margin-bottom: var(--u); }
 p { margin-bottom: var(--u); }
-code { font: var(--fs-s) var(--mono); background: var(--soft); padding: 1px 4px; border-radius: var(--r-s); word-break: break-all; }
+code { font: var(--fs-s) var(--mono); background: var(--soft); padding: 0.0625rem 0.25rem; border-radius: var(--r-s); word-break: break-all; }
 .muted, .small { color: var(--mid); }
 .small { font-size: var(--fs-xs); }
-.eyebrow { color: var(--mid); font-size: var(--fs-s); margin-bottom: 4px; }
+.eyebrow { color: var(--mid); font-size: var(--fs-s); margin-bottom: 0.25rem; }
 .err { color: var(--danger); }
 .center { text-align: center; }
 
 @keyframes fade { from { opacity: 0 } }
-@keyframes nudge { 50% { transform: translateY(-4px); } }
+@keyframes nudge { 50% { transform: translateY(-0.25rem); } }
 @keyframes blink { 50% { opacity: .5; } }
 @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }

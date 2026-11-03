@@ -1,12 +1,12 @@
 // Install help, notification prompt
 
-.install-bar { display: flex; gap: 8px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: var(--fs-s); color: var(--fg); background: var(--soft); }
+.install-bar { display: flex; gap: 0.5rem; align-items: center; padding: 0.625rem 1rem; border-bottom: 0.0625rem solid var(--line); font-size: var(--fs-s); color: var(--fg); background: var(--soft); }
 .install-bar span { flex: 1; }
-.steps { padding-left: 20px; margin: 8px 0 16px; }
-.steps li { padding: 6px 0; }
-.ico { display: inline-block; border: 1px solid var(--rule); border-radius: var(--r); padding: 0 5px; font-size: var(--fs-s); }
-.install-arrow { position: fixed; left: 50%; bottom: calc(6px + env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: var(--fs-score); color: var(--green); animation: bob 1s ease-in-out infinite; pointer-events: none; }
+.steps { padding-left: 1.25rem; margin: 0.5rem 0 1rem; }
+.steps li { padding: 0.375rem 0; }
+.ico { display: inline-block; border: 0.0625rem solid var(--rule); border-radius: var(--r); padding: 0 0.3125rem; font-size: var(--fs-s); }
+.install-arrow { position: fixed; left: 50%; bottom: calc(0.375rem + env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: var(--fs-score); color: var(--green); animation: bob 1s ease-in-out infinite; pointer-events: none; }
 .install-sheet { align-items: center; }
-.install-sheet .sheet-card { border-radius: var(--r-sheet); margin: 0 12px 70px; }
-.notify-ask { display: flex; gap: 12px; align-items: center; justify-content: space-between; border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; margin-bottom: 16px; font-size: var(--fs-s); }
-@keyframes bob { 50% { transform: translate(-50%, 6px); } }
+.install-sheet .sheet-card { border-radius: var(--r-sheet); margin: 0 0.75rem 4.375rem; }
+.notify-ask { display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; border: 0.0625rem solid var(--line); border-radius: var(--r); padding: 0.625rem 0.75rem; margin-bottom: 1rem; font-size: var(--fs-s); }
+@keyframes bob { 50% { transform: translate(-50%, 0.375rem); } }
