@@ -30,3 +30,16 @@ button.wide { width: 100%; }
 .ways { list-style: none; padding: 0; }
 .ways li { padding: 0.5rem 0; border-bottom: 0.0625rem solid var(--line); }
 .bm { text-decoration: none; border: 0.0625rem solid var(--rule); border-radius: var(--r); padding: 0.125rem 0.5rem; }
+
+/* Collect page sections */
+.lead { color: var(--mid); margin: -0.5rem 0 1.5rem; max-width: 36rem; }
+.csec { border-top: 0.0625rem solid var(--line); padding-top: 1.25rem; margin-bottom: 2rem; }
+.csec h3 { font-size: var(--fs-l); font-weight: var(--fw-title); color: var(--strong); margin-bottom: 0.25rem; }
+.csec > p.muted { margin-bottom: 0.75rem; max-width: 40rem; }
+.file.inline { margin: 0; }
+.file.inline span { padding: 0.125rem 0.5rem; font-size: var(--fs-s); }
+.bm { display: inline-block; padding: 0.5rem 0.875rem; font-size: var(--fs-m); color: var(--strong); cursor: grab; }
+.ways-more { margin-top: 1rem; font-size: var(--fs-s); color: var(--mid); }
+.ways-more summary { cursor: pointer; }
+.ways-more .ways { margin-top: 0.5rem; color: var(--fg); }
+form .row + .row { margin-top: 0.5rem; }

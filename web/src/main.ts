@@ -178,19 +178,13 @@ function shell(active: string, body: string) {
   const here = SCREENS.find((x) => x.id === active)?.label
   app.innerHTML = `
     <header class="top">
-      <a class="brand" href="#/inbox">${APP_NAME}</a>${here ? `<span class="here">/ ${here}</span>` : ''}
+      <a class="brand" href="#/">${APP_NAME}</a>${here ? `<span class="here">/ ${here}</span>` : ''}
       <button class="around-pill" id="aroundPill" aria-label="People around"></button>
       <button class="burger" id="burger" aria-label="Menu"><i></i><i></i><i></i></button>
     </header>
-    ${installBannerHtml()}
     <main>${body}</main>`
   $('#burger').addEventListener('click', () => openMenu(active))
   $('#aroundPill').addEventListener('click', openAroundSheet)
-  document.getElementById('installGo')?.addEventListener('click', openInstall)
-  document.getElementById('installNo')?.addEventListener('click', () => {
-    try { localStorage.setItem('recco:install-dismissed', '1') } catch {}
-    document.querySelector('.install-bar')?.remove()
-  })
   updatePill()
 }
 
@@ -207,11 +201,9 @@ relay.onPeers(updatePill)
 function openMenu(active: string) {
   const m = document.createElement('div')
   m.className = 'menu'
-  const canInstall = !support.standalone()
   m.innerHTML = `
     <div class="menu-top"><span class="brand">${APP_NAME}</span><button data-close>Close</button></div>
     <nav>${SCREENS.map((x) => `<a href="#/${x.id}" class="${x.id === active ? 'on' : ''}">${x.label}<span>${x.hint}</span></a>`).join('')}
-      ${canInstall ? `<a href="#" data-install>Add to home screen<span>install the app</span></a>` : ''}
     </nav>
     <p class="menu-foot">${esc(state.me.name)} · ${relay.status === 'on' ? `online · ${relay.peers.length} around` : 'offline'}</p>`
   document.body.append(m)
@@ -222,7 +214,6 @@ function openMenu(active: string) {
     if (t.closest('[data-close]')) return closeOverlay()
     if (!a) return
     e.preventDefault()
-    if (a.hasAttribute('data-install')) return closeOverlay(openInstall)
     const to = a.getAttribute('href')!
     closeOverlay(() => (location.hash === to ? render() : (location.hash = to)))
   })
@@ -252,21 +243,12 @@ let installPrompt: any = null
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault()
   installPrompt = e
-  if (document.querySelector('.top') && !document.querySelector('.install-bar')) render()
+  if (route()[0] === 'gateways') render() // the Install button in Settings becomes one tap
 })
 window.addEventListener('appinstalled', () => {
   installPrompt = null
-  document.querySelector('.install-bar')?.remove()
+  if (route()[0] === 'gateways') render()
 })
-
-function installBannerHtml() {
-  let dismissed = false
-  try { dismissed = localStorage.getItem('recco:install-dismissed') === '1' } catch {}
-  if (support.standalone() || dismissed || !state.me.name) return ''
-  if (!installPrompt && !support.ios()) return ''
-  return `<div class="install-bar"><span>Put ${APP_NAME} on your home screen: it opens like an app and can notify you.</span>
-    <button class="sm" id="installGo">${installPrompt ? 'Install' : 'How'}</button><button class="sm ghost" id="installNo" aria-label="Dismiss">×</button></div>`
-}
 
 function openInstall() {
   if (installPrompt) {
@@ -320,17 +302,21 @@ function renderCollect() {
   const bookmarklet = `javascript:location='${appBase()}?add='+encodeURIComponent(location.href)`
   shell('collect', `
     <h2>Collect</h2>
-    <section>
+    <p class="lead">Films, series, music, podcasts… Everything you add lands in Saved, ready to send.</p>
+
+    <section class="csec">
+      <h3>Search by name</h3>
+      <p class="muted">Films and series.${hasTmdb() ? '' : ' Add a TMDB key in Settings to turn search on.'}</p>
       <form id="searchForm" class="row">
-        <input name="q" type="search" placeholder="${hasTmdb() ? 'Search films & series' : 'Add a TMDB key in Gateways to search'}" ${hasTmdb() ? '' : 'disabled'}>
+        <input name="q" type="search" placeholder="Title, e.g. Past Lives" autocomplete="off" ${hasTmdb() ? '' : 'disabled'}>
         <button ${hasTmdb() ? '' : 'disabled'}>Search</button>
       </form>
       <div id="results" class="grid"></div>
     </section>
 
-    <section class="card">
+    <section class="csec">
       <h3>Paste a link</h3>
-      <p class="muted">Any link: IMDb, Letterboxd, Spotify, Deezer, Apple Podcasts, YouTube, SoundCloud, Bandcamp, Radio France… or “Title (2024)”.</p>
+      <p class="muted">IMDb, Letterboxd, Spotify, Deezer, Apple Music & Podcasts, YouTube, SoundCloud, Bandcamp, Radio France… or just “Title (2024)”.</p>
       <form id="pasteForm">
         <textarea name="t" rows="2" placeholder="https://open.spotify.com/… or https://letterboxd.com/film/…"></textarea>
         <div class="row">
@@ -344,21 +330,25 @@ function renderCollect() {
       </form>
     </section>
 
-    <section class="card">
-      <h3>Import a watchlist</h3>
-      <p class="muted">Letterboxd: Settings → Import & Export → Export your data → <code>watchlist.csv</code>.<br>IMDb: Your watchlist → ⋯ → Export.</p>
-      <label class="file"><input type="file" id="csv" accept=".csv,text/csv"><span>Choose CSV</span></label>
-      <label class="file"><input type="file" id="lfile" accept=".json,application/json"><span>Open a shared list file</span></label>
+    <section class="csec">
+      <h3>Import a CSV</h3>
+      <p class="muted">Bring your watchlist from Letterboxd (Settings → Import & Export → Export your data → <code>watchlist.csv</code>) or IMDb (Your watchlist → ⋯ → Export).</p>
+      <label class="file"><input type="file" id="csv" accept=".csv,text/csv"><span>Choose a CSV file</span></label>
       <div id="csvStatus" class="muted"></div>
+      <p class="muted small">Got a list as a <code>.recco.json</code> file? <label class="file inline"><input type="file" id="lfile" accept=".json,application/json"><span>Open it</span></label></p>
     </section>
 
-    <section class="card">
-      <h3>Other ways in</h3>
-      <ul class="ways">
-        <li><b>Android</b> — install the app, then use <em>Share → ${APP_NAME}</em> from any app.</li>
-        <li><b>iPhone</b> — iOS doesn't let web apps appear in the share sheet. Copy the link and use “Paste from clipboard”, or make a Shortcut that opens <code>${esc(appBase())}?add=[Shortcut Input]</code>.</li>
-        <li><b>Desktop</b> — drag this to your bookmarks bar, click it on any film page: <a class="bm" href="${esc(bookmarklet)}">＋ ${APP_NAME}</a></li>
-      </ul>
+    <section class="csec">
+      <h3>Bookmarklet</h3>
+      <p class="muted">On a computer, drag this button to your bookmarks bar. Then click it on any film, album or podcast page to save it here.</p>
+      <a class="bm" href="${esc(bookmarklet)}" title="Drag me to your bookmarks bar">＋ ${APP_NAME}</a>
+      <details class="ways-more">
+        <summary>From other apps on your phone</summary>
+        <ul class="ways">
+          <li><b>Android</b> — once the app is installed (Settings → Install the app), use <em>Share → ${APP_NAME}</em> from any app.</li>
+          <li><b>iPhone</b> — copy the link and use “Paste from clipboard”, or make a Shortcut that opens <code>${esc(appBase())}?add=[Shortcut Input]</code>.</li>
+        </ul>
+      </details>
     </section>`)
 
   $('#searchForm').addEventListener('submit', async (e) => {
@@ -1263,6 +1253,11 @@ function renderGateways() {
   const ios = support.ios(), android = support.android()
   shell('gateways', `
     <h2>Settings</h2>
+    ${support.standalone() ? '' : `<section class="card">
+      <h3>Install the app</h3>
+      <p class="muted">On your home screen, ${APP_NAME} opens like an app, works offline and can notify you when a friend sends something.</p>
+      <button class="ghost" id="installBtn">${installPrompt ? 'Install' : 'How to install'}</button>
+    </section>`}
     <section class="card">
       <h3>This device</h3>
       <table class="gw">
@@ -1323,6 +1318,7 @@ function renderGateways() {
         .join('')}</ul>` : '<p class="muted">Every share and collect event shows up here — handy when testing on several phones.</p>'}
     </section>`)
 
+  document.getElementById('installBtn')?.addEventListener('click', openInstall)
   $('#settings').addEventListener('submit', (e) => {
     e.preventDefault()
     const fd = new FormData(e.target as HTMLFormElement)
@@ -1380,9 +1376,10 @@ async function render() {
   if (screen === 'inbox') return renderInbox()
   if (screen === 'gateways') return renderGateways()
   if (screen === 'collect') return renderCollect()
-  // home is Saved (also right after onboarding)
-  if (location.hash !== '#/inbox') history.replaceState(null, '', location.pathname + location.search + '#/inbox')
-  return renderInbox()
+  // home: Saved when there's something to send (one step from sending), Collect for a new user
+  const home = Object.keys(state.library).length ? 'inbox' : 'collect'
+  if (location.hash !== `#/${home}`) history.replaceState(null, '', `${location.pathname}${location.search}#/${home}`)
+  return home === 'inbox' ? renderInbox() : renderCollect()
 }
 
 // Re-render on data change, except while a receive screen or the fling stage is open
