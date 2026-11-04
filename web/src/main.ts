@@ -440,7 +440,7 @@ async function importCsv(f: File) {
 }
 
 // Saved: an Are.na-style grid of blocks, with search, type filter and sort
-const savedView = { q: '', type: '' as '' | Media, sort: 'recent' as 'recent' | 'rating' | 'title' | 'year' | 'from', layout: readLayout() }
+const savedView = { q: '', type: '' as '' | Media, sort: 'recent' as 'recent' | 'rating' | 'title' | 'year' | 'from', layout: readLayout(), open: false }
 
 /** Saved layout: grid (2 per line) or column (1 per line, Instagram-style). Remembered on this phone. */
 function readLayout(): 'grid' | 'col' {
@@ -494,21 +494,26 @@ function renderInbox() {
     ${ask ? `<div class="notify-ask"><span>Get a notification when a friend sends you something.</span><button class="sm" id="notifyOn">Turn on</button></div>` : ''}
     <h2>Saved</h2>
     ${items.length ? `
-      <div class="toolbar">
-        <input type="search" id="q" placeholder="Search titles, people, notes" value="${esc(savedView.q)}" autocomplete="off">
-        <select id="sort" aria-label="Sort">
-          <option value="recent">Recent</option><option value="rating">Rating</option><option value="title">Title</option><option value="year">Year</option><option value="from">From</option>
-        </select>
-        <span class="layout" id="layout" role="group" aria-label="View">
-          <button data-layout="grid" class="${savedView.layout === 'grid' ? 'on' : ''}" aria-label="Grid, 2 per line" aria-pressed="${savedView.layout === 'grid'}">${ICON_GRID}</button><button data-layout="col" class="${savedView.layout === 'col' ? 'on' : ''}" aria-label="Column, 1 per line" aria-pressed="${savedView.layout === 'col'}">${ICON_COL}</button>
-        </span>
-      </div>
-      ${types.length > 1 ? `<div class="chips" id="types"><button data-type="" class="${savedView.type ? '' : 'on'}">All types</button>${types
-        .map((m) => `<button data-type="${m.id}" class="${savedView.type === m.id ? 'on' : ''}">${m.label}</button>`)
-        .join('')}</div>` : ''}
-      ${people.length ? `<div class="chips" id="from"><a href="#/inbox/${MINE}" class="${from === MINE ? 'on' : ''}">Mine</a><a href="#/inbox/${ALL}" class="${from ? '' : 'on'}">Everyone</a>${people
-        .map((p) => `<a href="#/inbox/${encodeURIComponent(p)}" class="${from === p ? 'on' : ''}">${esc(p)}</a>`)
-        .join('')}</div>` : ''}
+      <details class="filters" id="filters"${savedView.open ? ' open' : ''}>
+        <summary><span class="sf-label">Filters</span><span class="sf-active" id="sfActive"></span></summary>
+        <div class="sf-panel">
+          <input type="search" id="q" placeholder="Search titles, people, notes" value="${esc(savedView.q)}" autocomplete="off">
+          <div class="toolbar">
+            <select id="sort" aria-label="Sort">
+              <option value="recent">Recent</option><option value="rating">Rating</option><option value="title">Title</option><option value="year">Year</option><option value="from">From</option>
+            </select>
+            <span class="layout" id="layout" role="group" aria-label="View">
+              <button data-layout="grid" class="${savedView.layout === 'grid' ? 'on' : ''}" aria-label="Grid, 2 per line" aria-pressed="${savedView.layout === 'grid'}">${ICON_GRID}</button><button data-layout="col" class="${savedView.layout === 'col' ? 'on' : ''}" aria-label="Column, 1 per line" aria-pressed="${savedView.layout === 'col'}">${ICON_COL}</button>
+            </span>
+          </div>
+          ${people.length ? `<div class="sf-group"><span class="sf-h">From</span><div class="chips" id="from"><a href="#/inbox/${MINE}" class="${from === MINE ? 'on' : ''}">Mine</a><a href="#/inbox/${ALL}" class="${from ? '' : 'on'}">Everyone</a>${people
+            .map((p) => `<a href="#/inbox/${encodeURIComponent(p)}" class="${from === p ? 'on' : ''}">${esc(p)}</a>`)
+            .join('')}</div></div>` : ''}
+          ${types.length > 1 ? `<div class="sf-group"><span class="sf-h">Type</span><div class="chips" id="types"><button data-type="" class="${savedView.type ? '' : 'on'}">All types</button>${types
+            .map((m) => `<button data-type="${m.id}" class="${savedView.type === m.id ? 'on' : ''}">${m.label}</button>`)
+            .join('')}</div></div>` : ''}
+        </div>
+      </details>
       <p class="count" id="count"></p>
       <div class="blocks is-${savedView.layout}" id="blocks"></div>`
     : '<p class="empty">Nothing saved yet. Collect a few titles, or open something a friend sent you.</p>'}`)
@@ -526,6 +531,13 @@ function renderInbox() {
       savedView.sort,
     )
     $('#count').textContent = `${shown.length} ${shown.length === 1 ? 'block' : 'blocks'}`
+    const sortLabel: Record<string, string> = { rating: 'by rating', title: 'A–Z', year: 'by year', from: 'by sender' }
+    $('#sfActive').textContent = [
+      people.length ? (from === MINE ? 'Mine' : from || 'Everyone') : '',
+      savedView.type ? mediaLabel(savedView.type) : '',
+      savedView.q.trim() ? `“${savedView.q.trim()}”` : '',
+      sortLabel[savedView.sort] || '',
+    ].filter(Boolean).join(' · ')
     $('#blocks').innerHTML = shown.map(blockHtml).join('') || '<p class="empty">Nothing matches.</p>'
     document.querySelectorAll<HTMLElement>('#blocks [data-send]').forEach((b) => {
       const it = state.library[b.dataset.send!]
@@ -551,6 +563,7 @@ function renderInbox() {
       x.setAttribute('aria-pressed', String(x === b))
     })
   })
+  $('#filters').addEventListener('toggle', () => (savedView.open = ($('#filters') as HTMLDetailsElement).open))
   const sortEl = $<HTMLSelectElement>('#sort')
   sortEl.value = savedView.sort
   sortEl.addEventListener('change', () => ((savedView.sort = sortEl.value as typeof savedView.sort), draw()))
