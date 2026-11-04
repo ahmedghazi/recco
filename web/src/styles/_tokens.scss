@@ -7,8 +7,8 @@
 :root {
   /* ---------- colours ---------- */
   --bg: #eeefe1; /* page background: the warm off-white of The Lobster poster */
-  --fg: #000; /* body text: the poster's black */
-  --strong: #000; /* titles, primary buttons */
+  --fg: #231f20; /* body text: the poster's vintage off-black */
+  --strong: var(--fg); /* titles, primary buttons */
   --mid: color-mix(in srgb, var(--fg) 50%, var(--bg)); /* metadata, hints */
   --line: color-mix(in srgb, var(--fg) 10%, var(--bg)); /* hairlines, block borders */
   --rule: color-mix(in srgb, var(--fg) 16%, var(--bg)); /* input and button borders */
@@ -20,12 +20,12 @@
   --media-bg: #000; /* behind trailers */
 
   /* ---------- the card that gets sent: inverted, so it stands out from the page ---------- */
-  --card-bg: #000;
-  --card-fg: color-mix(in srgb, var(--bg) 85%, #000);
+  --card-bg: var(--fg);
+  --card-fg: color-mix(in srgb, var(--bg) 85%, var(--fg));
   --card-strong: var(--bg);
-  --card-mid: color-mix(in srgb, var(--bg) 55%, #000);
-  --card-line: color-mix(in srgb, var(--bg) 18%, #000);
-  --card-soft: color-mix(in srgb, var(--bg) 12%, #000);
+  --card-mid: color-mix(in srgb, var(--bg) 55%, var(--fg));
+  --card-line: color-mix(in srgb, var(--bg) 18%, var(--fg));
+  --card-soft: color-mix(in srgb, var(--bg) 12%, var(--fg));
 
   /* ---------- type ---------- */
   --font: "ABC Areal", Arial, "Helvetica Neue", Helvetica, sans-serif; /* variable: weight 400–700, italic, MONO axis */
