@@ -4,34 +4,33 @@ import { token } from './tokens'
 // an in-app banner + soft chime + vibration, and a system notification when the app is in the background.
 
 // ---------- back gesture closes overlays ----------
-let closer: (() => void) | null = null
+// Overlays stack (e.g. Poke opened from the Send screen); back closes the top one only.
+const closers: (() => void)[] = []
 let after: (() => void) | null = null
 
 /** Register an open overlay: the phone's back gesture (or Android back button) will close it. */
 export function pushOverlay(close: () => void) {
-  if (closer) closer() // only one overlay at a time
-  closer = close
+  closers.push(close)
   history.pushState({ overlay: true }, '', location.href)
 }
 
-/** Close the current overlay (pops the history entry it added), then optionally run `then`. */
+/** Close the top overlay (pops the history entry it added), then optionally run `then`. */
 export function closeOverlay(then?: () => void) {
-  if (!closer) return then?.()
+  if (!closers.length) return then?.()
   after = then || null
   if (history.state?.overlay) history.back()
   else runClose()
 }
 
 function runClose() {
-  const c = closer, a = after
-  closer = null
+  const c = closers.pop(), a = after
   after = null
   c?.()
   a?.()
 }
 
 window.addEventListener('popstate', () => {
-  if (closer) runClose()
+  if (closers.length) runClose()
 })
 
 // ---------- in-app signal ----------

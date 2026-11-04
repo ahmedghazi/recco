@@ -83,6 +83,7 @@
   --banner-duration: 1400ms; /* "Tom sent you" banner on screen */
   --hold-delay: 280ms; /* press time before the hold-to-send arc opens */
   --trail-frames: 3; /* pile trail: frames of lag between two cards */
+  --poke-threshold: 22; /* shock (m/s²) that counts as touching phones */
 
   /* aliases kept for older rules */
   --green: var(--accent);

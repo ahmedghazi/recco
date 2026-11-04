@@ -10,6 +10,7 @@ import { relay, addFriend, type IncomingHand, type Peer } from './relay'
 import { askNotify, banner, closeOverlay, notifyState, pushOverlay, systemNotify } from './notify'
 import { enrich, playerFor } from './enrich'
 import { attachRadial, type RadialItem } from './radial'
+import { openPoke } from './poke'
 import { token } from './tokens'
 import { globalScore, hasOmdb } from './omdb'
 
@@ -230,10 +231,14 @@ function openAroundSheet() {
       ? `<ul class="peer-list">${peers.map((p) => `<li>${esc(p.name)}<span>${p.friend ? 'friend · ' : ''}${how[p.how]}</span></li>`).join('')}</ul>
          <p class="muted">Open a title or a list and tap Send.</p>`
       : `<p class="muted">Friends show up when their app is open. People on the same wifi too, or use a code from the Send screen.</p>`}
+    <button class="wide" data-poke>Poke to connect</button>
+    <p class="muted small center">Already has the app? Touch phones together. New to ${APP_NAME}? Show them a QR from Send.</p>
     <button class="ghost wide" data-close>Close</button></div>`
   document.body.append(sh)
   pushOverlay(() => sh.remove())
   sh.addEventListener('click', (e) => {
+    // open right inside the tap (iPhone only grants motion sensors from a tap); it stacks over this sheet
+    if ((e.target as HTMLElement).closest('[data-poke]')) return openPoke(toast)
     if (e.target === sh || (e.target as HTMLElement).closest('[data-close]')) closeOverlay()
   })
 }
@@ -985,7 +990,7 @@ async function openFling(l: List) {
   stage.innerHTML = `
     <div class="stage-top"><span>${esc(l.name)}</span><span>${titles(l.items.length)}</span><button class="x" aria-label="Close">Close</button></div>
     <div class="around">
-      <div class="around-head"><span>Around</span><button class="codebtn" data-a="code">Code</button></div>
+      <div class="around-head"><span>Around</span><span class="around-acts"><button class="codebtn" data-a="poke">Poke</button><button class="codebtn" data-a="code">Code</button></span></div>
       <div class="peers" id="peers"></div>
       <div class="codebox" hidden>
         <span>Your code <b>${myCode}</b></span>
@@ -1090,6 +1095,7 @@ async function openFling(l: List) {
         .catch((err) => logGateway('web-share', err.name === 'AbortError' ? 'cancelled' : err.message, false))
       return
     }
+    if (a === 'poke') return openPoke(toast)
     if (a === 'code') {
       const box = $('.codebox', stage)
       box.hidden = !box.hidden

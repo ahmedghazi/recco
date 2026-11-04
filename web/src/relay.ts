@@ -46,6 +46,7 @@ let net = '' // short network id from the relay, for debugging "can't see each o
 const peerListeners = new Set<Listener<Peer[]>>()
 const handListeners = new Set<Listener<IncomingHand>>()
 const ackListeners = new Set<Listener<{ from: { id: string; name: string }; kept: boolean }>>()
+const pokeListeners = new Set<Listener<{ id: string; name: string }>>()
 const pendingSends = new Map<string, (ok: boolean) => void>()
 
 export const relay = {
@@ -55,6 +56,9 @@ export const relay = {
   onPeers(fn: Listener<Peer[]>) { peerListeners.add(fn); fn(peers); return () => peerListeners.delete(fn) },
   onHand(fn: Listener<IncomingHand>) { handListeners.add(fn) },
   onAck(fn: Listener<{ from: { id: string; name: string }; kept: boolean }>) { ackListeners.add(fn) },
+  /** someone touched phones with us at the same instant */
+  onPokeMatch(fn: Listener<{ id: string; name: string }>) { pokeListeners.add(fn); return () => pokeListeners.delete(fn) },
+  poke() { ws?.readyState === 1 && ws.send(JSON.stringify({ t: 'poke' })) },
 
   connect() {
     if (ws && ws.readyState <= 1) return
@@ -81,6 +85,7 @@ export const relay = {
         peerListeners.forEach((fn) => fn(peers))
       }
       if (m.t === 'welcome') net = String(m.net || '')
+      if (m.t === 'poke-match') pokeListeners.forEach((fn) => fn(m.peer))
       if (m.t === 'hand') handListeners.forEach((fn) => fn(m))
       if (m.t === 'ack') ackListeners.forEach((fn) => fn(m))
       if (m.t === 'delivered' || m.t === 'undelivered') {

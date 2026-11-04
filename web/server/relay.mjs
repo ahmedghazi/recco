@@ -15,6 +15,9 @@ const SALT = process.env.RELAY_SALT || 'recco'
 // (browser tab + installed app share an id): they all count as one peer and all receive.
 const conns = new Set()
 const byId = (id) => [...conns].filter((c) => c.id === id)
+const pokes = [] // recent shocks waiting for a partner: { c, at }
+const POKE_WINDOW = 700 // ms between the two phones' reports (network jitter included)
+const POKE_TTL = 1500
 const onlineCount = () => new Set([...conns].map((c) => c.id)).size
 
 const isPrivate = (ip) =>
@@ -114,6 +117,24 @@ wss.on('connection', (ws, req) => {
       if (Array.isArray(m.friends)) me.friends = new Set(m.friends.slice(0, 500))
       if (m.visible) me.visible = m.visible === 'friends' ? 'friends' : 'network'
       refreshAll()
+    }
+    if (m.t === 'poke') {
+      // two phones touched together: both report a shock within POKE_WINDOW ms
+      const now = Date.now()
+      for (let i = pokes.length - 1; i >= 0; i--) if (now - pokes[i].at > POKE_TTL || !conns.has(pokes[i].c)) pokes.splice(i, 1)
+      const cands = pokes.filter((p) => p.c.id !== me.id && Math.abs(p.at - now) <= POKE_WINDOW)
+      // prefer someone on the same network, then the closest in time
+      cands.sort((a, b) => Number(b.c.net === me.net) - Number(a.c.net === me.net) || Math.abs(a.at - now) - Math.abs(b.at - now))
+      const other = cands[0]
+      if (other) {
+        pokes.splice(pokes.indexOf(other), 1)
+        send(me, { t: 'poke-match', peer: { id: other.c.id, name: other.c.name } })
+        send(other.c, { t: 'poke-match', peer: { id: me.id, name: me.name } })
+        console.log(`poke match dt=${now - other.at}ms sameNet=${other.c.net === me.net}`)
+      } else {
+        pokes.push({ c: me, at: now })
+      }
+      return
     }
     if (m.t === 'code') {
       me.code = m.code ? String(m.code).toUpperCase().slice(0, 6) : undefined
