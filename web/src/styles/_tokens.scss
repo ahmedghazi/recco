@@ -77,6 +77,7 @@
   /* ---------- motion ---------- */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.2, 1.5, 0.4, 1);
+  --ease-cubic: cubic-bezier(0.33, 1, 0.68, 1); /* ease-out cubic */
   --t-fast: 0.15s;
   --t-mid: 0.3s;
   /* read by the JS */
@@ -85,7 +86,8 @@
   --flash-duration: 2500ms; /* "Sent to Tom" flash on the Send screen */
   --banner-duration: 1400ms; /* "Tom sent you" banner on screen */
   --hold-delay: 280ms; /* press time before the hold-to-send arc opens */
-  --trail-frames: 3; /* pile trail: frames of lag between two cards */
+  --trail-lag: 70ms; /* pile trail: how far each card lags behind the one above (smaller = tighter) */
+  --return-duration: 500ms; /* pile easing back after you let go */
   --poke-threshold: 22; /* shock (m/s²) that counts as touching phones */
 
   /* aliases kept for older rules */

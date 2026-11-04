@@ -927,52 +927,55 @@ function renderList(id: string) {
 
 // ---------- the fling stage ----------
 /**
- * The pile trails behind the finger like a pack of cards being dragged: card k shows where the
- * pile was k steps ago, so the cards follow the same path and catch up smoothly on release.
+ * The pile trails behind the finger like a pack of cards being dragged. Each card eases toward the
+ * card above it (a chain of smooth followers), so the pile flows instead of stepping, and it follows
+ * the top card wherever it really is on screen, including during the release animation.
  */
-const pileTrail = new WeakMap<HTMLElement, { hist: Vec[]; cur: Vec; raf: number; idle: number }>()
-function staggerPile(hand: HTMLElement, pos: Vec | null, flung = false) {
+const pileTrail = new WeakMap<HTMLElement, { raf: number }>()
+function staggerPile(hand: HTMLElement, _pos: Vec | null, _flung = false) {
   let t = pileTrail.get(hand)
-  if (!t) {
-    t = { hist: [], cur: { x: 0, y: 0 }, raf: 0, idle: 0 }
-    pileTrail.set(hand, t)
-  }
-  // while dragging, follow the finger; on release the pile is back at 0 (or gone, if flung)
-  t.cur = pos ? { ...pos } : { x: 0, y: 0 }
-  t.idle = 0
-  if (flung) {
-    // flung: the container flies away; let the trail stretch a bit behind it
-    t.hist = t.hist.map((h) => ({ x: h.x * 0.6, y: h.y * 0.6 }))
-  }
-  if (t.raf) return
+  if (!t) pileTrail.set(hand, (t = { raf: 0 }))
+  if (t.raf) return // already running: it reads the live position every frame
   const cards = Array.from(hand.querySelectorAll<HTMLElement>('.hc')).reverse() // 0 = top card
   cards.forEach((el) => (el.style.transition = 'none'))
-  const STEP = Math.max(1, Math.round(token('--trail-frames', 3))) // frames of delay between two cards (theme.css)
-  const tick = () => {
-    const st = t!
-    st.hist.unshift({ ...st.cur })
-    st.hist.length = Math.min(st.hist.length, cards.length * STEP + 1)
-    let moving = false
+  const lag = token('--trail-lag', 70) // ms: how far each card lags behind the one above it
+  const where = (): Vec => {
+    const tf = getComputedStyle(hand).transform
+    if (!tf || tf === 'none') return { x: 0, y: 0 }
+    const m = new DOMMatrix(tf)
+    return { x: m.m41, y: m.m42 }
+  }
+  let lead = where()
+  const pts = cards.map(() => ({ ...lead }))
+  let last = performance.now(), still = 0
+  const tick = (now: number) => {
+    const dt = Math.min(64, now - last)
+    last = now
+    const prev = lead
+    lead = where()
+    // a teleport (the pile coming back after a fling): snap, don't trail across the screen
+    if (Math.hypot(lead.x - prev.x, lead.y - prev.y) > 200) pts.forEach((p) => ((p.x = lead.x), (p.y = lead.y)))
+    const a = 1 - Math.exp(-dt / lag)
+    let moving = Math.hypot(lead.x - prev.x, lead.y - prev.y) > 0.1
+    pts[0] = { ...lead }
     cards.forEach((el, k) => {
       if (!k) return
-      const past = st.hist[Math.min(st.hist.length - 1, k * STEP)]
-      const dx = past.x - st.cur.x, dy = past.y - st.cur.y
-      if (Math.abs(dx) + Math.abs(dy) > 0.5) moving = true
-      el.style.setProperty('--dx', `${dx.toFixed(1)}px`)
-      el.style.setProperty('--dy', `${dy.toFixed(1)}px`)
+      const p = pts[k], q = pts[k - 1]
+      p.x += (q.x - p.x) * a
+      p.y += (q.y - p.y) * a
+      const dx = p.x - lead.x, dy = p.y - lead.y
+      if (Math.abs(dx) + Math.abs(dy) > 0.2) moving = true
+      el.style.setProperty('--dx', `${dx.toFixed(2)}px`)
+      el.style.setProperty('--dy', `${dy.toFixed(2)}px`)
       el.style.setProperty('--rot', `${Math.max(-4, Math.min(4, dx / 24)).toFixed(2)}deg`)
     })
-    st.idle = moving ? 0 : st.idle + 1
-    if (st.idle > 20) {
-      st.raf = 0
-      cards.forEach((el) => {
-        el.style.setProperty('--dx', '0px')
-        el.style.setProperty('--dy', '0px')
-        el.style.setProperty('--rot', '0deg')
-      })
+    still = moving ? 0 : still + 1
+    if (still > 10) {
+      t!.raf = 0
+      cards.forEach((el) => ['--dx', '--dy', '--rot'].forEach((v) => el.style.removeProperty(v)))
       return
     }
-    st.raf = requestAnimationFrame(tick)
+    t!.raf = requestAnimationFrame(tick)
   }
   t.raf = requestAnimationFrame(tick)
 }

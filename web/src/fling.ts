@@ -6,6 +6,9 @@ import { token } from './tokens'
 
 export interface Vec { x: number; y: number }
 
+/** ease-out cubic: fast start, long soft landing, no bounce */
+const EASE = 'cubic-bezier(0.33, 1, 0.68, 1)'
+
 export function attachFling(
   card: HTMLElement,
   onFling: (dir: Vec) => void,
@@ -54,14 +57,14 @@ export function attachFling(
       onDrag?.(null, true)
       navigator.vibrate?.([12, 30, 18])
       const k = (window.innerHeight * 1.1) / Math.abs(dir.y)
-      card.style.transition = 'transform .45s cubic-bezier(.2,.7,.2,1), opacity .45s'
+      card.style.transition = `transform .45s ${EASE}, opacity .45s`
       setT(dir.x * k, dir.y * k, 'scale(.6)')
       card.style.opacity = '0'
       setTimeout(() => {
         card.style.transition = 'none'
         setT(0, 60, 'scale(.9)')
         requestAnimationFrame(() => {
-          card.style.transition = 'transform .5s cubic-bezier(.2,1.4,.4,1), opacity .3s'
+          card.style.transition = `transform ${token('--return-duration', 500)}ms ${EASE}, opacity .3s`
           card.style.opacity = '1'
           setT(0, 0)
         })
@@ -69,7 +72,7 @@ export function attachFling(
     } else {
       onAim?.(null)
       onDrag?.(null, false)
-      card.style.transition = 'transform .4s cubic-bezier(.2,1.4,.4,1)'
+      card.style.transition = `transform ${token('--return-duration', 500)}ms ${EASE}`
       setT(0, 0)
     }
   }
