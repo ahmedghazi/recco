@@ -471,6 +471,9 @@ function blockHtml(i: LibItem) {
   </div>`
 }
 
+/** Saved filter: things I collected myself (nobody sent them). */
+const MINE = '~mine'
+
 function renderInbox() {
   const items = libraryList()
   const people = [...new Set(items.flatMap((i) => i.recos.map((r) => r.from)))]
@@ -490,8 +493,8 @@ function renderInbox() {
       ${types.length > 1 ? `<div class="chips" id="types"><button data-type="" class="${savedView.type ? '' : 'on'}">All types</button>${types
         .map((m) => `<button data-type="${m.id}" class="${savedView.type === m.id ? 'on' : ''}">${m.label}</button>`)
         .join('')}</div>` : ''}
-      ${people.length ? `<div class="chips"><a href="#/inbox" class="${from ? '' : 'on'}">Everyone</a>${people
-        .map((p) => `<a href="#/inbox/${encodeURIComponent(p)}" class="${from === p ? 'on' : ''}">from ${esc(p)}</a>`)
+      ${people.length ? `<div class="chips" id="from"><a href="#/inbox" class="${from ? '' : 'on'}">Everyone</a><a href="#/inbox/${MINE}" class="${from === MINE ? 'on' : ''}">Mine</a>${people
+        .map((p) => `<a href="#/inbox/${encodeURIComponent(p)}" class="${from === p ? 'on' : ''}">${esc(p)}</a>`)
         .join('')}</div>` : ''}
       <p class="count" id="count"></p>
       <div class="blocks" id="blocks"></div>`
@@ -506,7 +509,7 @@ function renderInbox() {
 
   const draw = () => {
     const shown = sortItems(
-      items.filter((i) => (!from || i.recos.some((r) => r.from === from)) && (!savedView.type || (i.media || 'movie') === savedView.type) && matches(i, savedView.q)),
+      items.filter((i) => (!from || (from === MINE ? !i.recos.length : i.recos.some((r) => r.from === from))) && (!savedView.type || (i.media || 'movie') === savedView.type) && matches(i, savedView.q)),
       savedView.sort,
     )
     $('#count').textContent = `${shown.length} ${shown.length === 1 ? 'block' : 'blocks'}`
