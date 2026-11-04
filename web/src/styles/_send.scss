@@ -8,12 +8,19 @@
 .around { align-self: stretch; border-bottom: 0.0625rem solid var(--line); padding: 0.625rem 0 0.75rem; }
 .around-head { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-s); color: var(--green); margin-bottom: 0.5rem; }
 .codebtn { background: none; color: var(--fg); border: 0; padding: 0; text-decoration: underline; text-underline-offset: 0.1875rem; font-size: var(--fs-s); }
-.peers { display: flex; gap: 0.625rem; overflow-x: auto; scrollbar-width: none; min-height: 4.5rem; align-items: stretch; }
+.peers { display: flex; gap: 0.625rem; overflow-x: auto; overflow-y: visible; scrollbar-width: none; min-height: 4.5rem; align-items: stretch; padding: 1.25rem 0.875rem; margin: -1.25rem -0.875rem; }
 .peer { flex: none; display: flex; flex-direction: column; align-items: center; gap: 0.1875rem; width: 4.375rem; padding: 0; background: none; color: var(--fg); border: 0; }
 .peer .av { width: var(--avatar); height: var(--avatar); border-radius: 50%; display: grid; place-items: center; border: 0.0938rem solid var(--green); color: var(--green); font-size: var(--fs-l); transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast); }
 .peer .pn { font-size: var(--fs-s); max-width: 4.375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .peer .ph { font-size: var(--fs-2xs); color: var(--mid); }
-.peer.aim .av, .peer.sending .av { background: var(--green); color: var(--on-accent); transform: scale(1.1); }
+// the person you're aiming at grows, so you know who'll get it before you let go
+.peer .av { transition: background var(--t-fast), color var(--t-fast), transform var(--t-mid) var(--ease-spring), box-shadow var(--t-mid); }
+.peer.aim .av { background: var(--green); color: var(--on-accent); transform: scale(var(--aim-scale)); box-shadow: 0 0 0 0.375rem color-mix(in srgb, var(--green) 22%, transparent); }
+.peer .pn, .peer .ph { transition: transform var(--t-mid) var(--ease-spring), opacity var(--t-fast); }
+.peer.aim .ph { opacity: 0; }
+.peer.aim .pn, .peer.aim .ph { transform: translateY(1.125rem); }
+.peer.aim .pn { color: var(--strong); font-weight: var(--fw-bold); }
+.peer.sending .av { background: var(--green); color: var(--on-accent); transform: scale(1.1); }
 .peer.sending .av { animation: blink .6s infinite; }
 .peer.sent .av { background: var(--green); color: var(--on-accent); }
 .peer.sent .ph { color: var(--green); }
@@ -35,3 +42,14 @@
 .qr { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; gap: 1rem; font-size: var(--fs-m); color: var(--mid); }
 .qr[hidden] { display: none; }
 .qr img { width: min(80vw, 25rem); image-rendering: pixelated; }
+
+// after a send: a clear "Sent to Tom", covering the pile so it can't be flicked again by reflex
+.sent-panel { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 1.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom)); text-align: center; animation: fade var(--t-fast); }
+.sent-panel[hidden] { display: none; }
+.sent-panel h2 { margin: 0; font-size: var(--fs-h2); font-weight: var(--fw-title); color: var(--strong); }
+.sent-panel p { margin: 0; max-width: 22rem; }
+.sp-mark { width: 5.5rem; height: 5.5rem; border-radius: 50%; display: grid; place-items: center; background: var(--green); color: var(--on-accent); font-size: 2.75rem; animation: sp-pop 0.5s var(--ease-spring); }
+.sp-mark.miss { background: none; color: var(--danger); border: 0.125rem solid var(--danger); }
+.sp-acts { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; justify-content: center; }
+.stage.done .hand, .stage.done .hint { visibility: hidden; }
+@keyframes sp-pop { from { transform: scale(0.3); opacity: 0; } }

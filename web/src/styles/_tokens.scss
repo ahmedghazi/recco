@@ -71,6 +71,7 @@
   --pile-step: 0.3125rem; /* offset between stacked cards */
   --avatar: 2.875rem; /* people around on the Send screen */
   --bubble: 3.25rem; /* hold-to-send bubbles */
+  --aim-scale: 1.45; /* the person you're aiming at grows by this much */
 
   /* ---------- motion ---------- */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
