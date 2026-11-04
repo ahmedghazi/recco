@@ -1,4 +1,14 @@
-// base: Base: reset, page background, type scale, shared keyframes (fade, blink, nudge…).
+// base: reset, page background, type scale, shared keyframes (fade, blink, nudge…).
+
+/* ABC Areal Superfamily (Dinamo), one variable file: weights 400–700, italic via slant, MONO axis.
+   The file lives in public/fonts/ and is NOT in git (licence: no public redistribution). */
+@font-face {
+  font-family: "ABC Areal";
+  src: url("/fonts/ABCArealSuperfamilyVariable.woff2") format("woff2-variations"), url("/fonts/ABCArealSuperfamilyVariable.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: oblique 0deg 12deg;
+  font-display: swap;
+}
 
 * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
 /* the root stays at the browser default (16px) so 1rem = 16px everywhere; the body text size is set on body */
@@ -11,7 +21,7 @@ h1, h2, h3, h4 { font-weight: var(--fw-title); color: var(--strong); }
 h2 { font-size: var(--fs-h2); line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 calc(var(--u) * 2); }
 h3 { font-size: var(--fs-base); font-weight: var(--fw-bold); margin-bottom: var(--u); }
 p { margin-bottom: var(--u); }
-code { font: var(--fs-s) var(--mono); background: var(--soft); padding: 0.0625rem 0.25rem; border-radius: var(--r-s); word-break: break-all; }
+code { font: var(--fs-s) var(--mono); font-variation-settings: var(--mono-axis); background: var(--soft); padding: 0.0625rem 0.25rem; border-radius: var(--r-s); word-break: break-all; }
 .muted, .small { color: var(--mid); }
 .small { font-size: var(--fs-xs); }
 .eyebrow { color: var(--mid); font-size: var(--fs-s); margin-bottom: 0.25rem; }

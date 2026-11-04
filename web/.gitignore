@@ -3,3 +3,5 @@ dist
 .env
 .env.*
 !.env.example
+# licensed font: not redistributable, keep out of the public repo
+public/fonts/

@@ -6,30 +6,31 @@
 
 :root {
   /* ---------- colours ---------- */
-  --bg: #fff; /* page background */
-  --fg: #333; /* body text */
-  --strong: #111; /* titles, primary buttons */
-  --mid: #999; /* metadata, hints */
-  --line: #e6e6e6; /* hairlines, block borders */
-  --rule: #ddd; /* input and button borders */
-  --soft: #f4f4f4; /* placeholders, subtle fills */
+  --bg: #eeefe1; /* page background: the warm off-white of The Lobster poster */
+  --fg: #000; /* body text: the poster's black */
+  --strong: #000; /* titles, primary buttons */
+  --mid: color-mix(in srgb, var(--fg) 50%, var(--bg)); /* metadata, hints */
+  --line: color-mix(in srgb, var(--fg) 10%, var(--bg)); /* hairlines, block borders */
+  --rule: color-mix(in srgb, var(--fg) 16%, var(--bg)); /* input and button borders */
+  --soft: color-mix(in srgb, var(--fg) 5%, var(--bg)); /* placeholders, subtle fills */
   --accent: #17ac10; /* "live": people around, Send, hot bubble */
-  --on-accent: #fff; /* text on the accent colour */
+  --on-accent: var(--bg); /* text on the accent colour */
   --danger: #c33; /* errors */
   --scrim: rgba(0, 0, 0, 0.25); /* behind bottom sheets */
   --media-bg: #000; /* behind trailers */
 
   /* ---------- the card that gets sent: inverted, so it stands out from the page ---------- */
-  --card-bg: #141414;
-  --card-fg: #d6d6d6;
-  --card-strong: #fff;
-  --card-mid: #8c8c8c;
-  --card-line: #2c2c2c;
-  --card-soft: #222;
+  --card-bg: #000;
+  --card-fg: color-mix(in srgb, var(--bg) 85%, #000);
+  --card-strong: var(--bg);
+  --card-mid: color-mix(in srgb, var(--bg) 55%, #000);
+  --card-line: color-mix(in srgb, var(--bg) 18%, #000);
+  --card-soft: color-mix(in srgb, var(--bg) 12%, #000);
 
   /* ---------- type ---------- */
-  --font: Arial, "Helvetica Neue", Helvetica, sans-serif;
-  --mono: ui-monospace, Menlo, monospace;
+  --font: "ABC Areal", Arial, "Helvetica Neue", Helvetica, sans-serif; /* variable: weight 400–700, italic, MONO axis */
+  --mono: "ABC Areal", ui-monospace, Menlo, monospace; /* same family, with --mono-axis */
+  --mono-axis: "MONO" 100; /* ABC Areal's mono axis: 0 = proportional, 50 = semi mono, 100 = mono */
   --lh: 1.45;
   --fw-bold: 700;
   --fw-title: 400; /* titles stay regular, Are.na-style */
