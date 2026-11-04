@@ -999,7 +999,7 @@ async function openFling(l: List) {
   stage.innerHTML = `
     <div class="stage-top"><span>${esc(l.name)}</span><span>${titles(l.items.length)}</span><button class="x" aria-label="Close">Close</button></div>
     <div class="around">
-      <div class="around-head"><span>Around</span><span class="around-acts"><button class="codebtn" data-a="poke">Poke</button><button class="codebtn" data-a="code">Code</button></span></div>
+      <div class="around-head"><span>Around</span><span class="around-acts"><button class="codebtn sendall" data-a="all" hidden>Send to all</button><button class="codebtn" data-a="poke">Poke</button><button class="codebtn" data-a="code">Code</button></span></div>
       <div class="peers" id="peers"></div>
       <div class="codebox" hidden>
         <span>Your code <b>${myCode}</b></span>
@@ -1007,7 +1007,7 @@ async function openFling(l: List) {
       </div>
     </div>
     <div class="hand" id="deal">${cards}</div>
-    <div class="sent-panel" id="sentPanel" hidden></div>
+    <div class="flash" id="flash" role="status" aria-live="polite"></div>
     <p class="hint" id="hint"></p>
     <div class="stage-acts">
       ${support.share() ? '<button data-a="native" class="ghost">Share…</button>' : ''}
@@ -1048,6 +1048,7 @@ async function openFling(l: List) {
           })
           .join('')
       : `<p class="nobody">${relay.status === 'on' ? 'Nobody around yet.' : 'Offline.'} Use QR or Share.</p>`
+    $('.sendall', stage).hidden = peers.length < 2
     hint.textContent = peers.length
       ? peers.length === 1 ? `↑ Flick to ${peers[0].name}` : '↑ Aim and flick toward someone'
       : `↑ ${support.share() ? 'Flick to share' : 'Flick to copy the link'}`
@@ -1056,14 +1057,17 @@ async function openFling(l: List) {
   const peerEls = () => Array.from(stage.querySelectorAll<HTMLElement>('.peer'))
   const hand = $('#deal', stage)
 
-  const panel = $('#sentPanel', stage)
-  const showPanel = (html: string) => {
-    panel.style.top = `${$('.around', stage).getBoundingClientRect().bottom}px`
-    panel.innerHTML = html
-    panel.hidden = false
-    stage.classList.add('done')
+  // a short flash on top of the card: "Sent to Tom", then it fades away
+  const flashEl = $('#flash', stage)
+  let flashTimer = 0
+  const flash = (text: string, kind: 'ok' | 'miss' | 'info' = 'ok') => {
+    // the card's resting place (not where it is mid-flight)
+    flashEl.style.top = `${hand.offsetTop + hand.offsetHeight * 0.4}px`
+    flashEl.textContent = text
+    flashEl.className = `flash on ${kind}`
+    clearTimeout(flashTimer)
+    flashTimer = window.setTimeout(() => flashEl.classList.remove('on'), token('--flash-duration', 2500))
   }
-  const hidePanel = () => ((panel.hidden = true), stage.classList.remove('done'))
   const markPeer = (id: string) => {
     const el = peerEls().find((e) => e.dataset.id === id)
     const st = sendState.get(id)
@@ -1072,17 +1076,11 @@ async function openFling(l: List) {
     if (st) el.classList.add(st)
     el.querySelector('.ph')!.textContent = st === 'sent' ? 'Sent ✓' : st === 'sending' ? 'Sending…' : 'Missed'
   }
+  const names = (ps: Peer[]) => (ps.length <= 2 ? ps.map((p) => p.name).join(' and ') : `${ps.length} people`)
 
-  const sendTo = async (el: HTMLElement, again = false) => {
-    const peer = relay.peers.find((p) => p.id === el.dataset.id)
-    if (!peer) return
-    const st = sendState.get(peer.id)
-    if (st === 'sending') return // already on its way: ignore extra flicks
-    if (st === 'sent' && !again) {
-      return showPanel(`<div class="sp-mark">✓</div><h2>Already sent to ${esc(peer.name)}</h2>
-        <p class="muted">${esc(peer.name)} has it. No need to send it twice.</p>
-        <div class="sp-acts"><button class="big" data-p="done">Done</button><button class="ghost big" data-p="again" data-id="${esc(peer.id)}">Send again</button></div>`)
-    }
+  /** Send to one person; never twice to the same person for the same card. */
+  const deliver = async (peer: Peer): Promise<'sent' | 'failed' | 'skip'> => {
+    if (sendState.get(peer.id) === 'sending' || sendState.get(peer.id) === 'sent') return 'skip'
     sendState.set(peer.id, 'sending')
     markPeer(peer.id)
     const ok = await relay.send(peer.id, buildPayload(l))
@@ -1090,35 +1088,32 @@ async function openFling(l: List) {
     if (ok) sentLog.set(sentKey, new Set([...(sentLog.get(sentKey) || []), peer.id]))
     markPeer(peer.id)
     logGateway('nearby', `${l.name} → ${peer.name} (${peer.how})${ok ? '' : ' · not delivered'}`, ok)
-    if (ok) {
-      navigator.vibrate?.([15, 40, 15])
-      showPanel(`<div class="sp-mark">✓</div><h2>Sent to ${esc(peer.name)}</h2>
-        <p class="muted">${esc(l.single ? l.items.length === 1 ? 'It' : 'They' : l.name)} just landed on ${esc(peer.name)}'s screen.</p>
-        <div class="sp-acts"><button class="big" data-p="done">Done</button>${relay.peers.length > 1 ? '<button class="ghost big" data-p="more">Send to someone else</button>' : ''}</div>`)
-    } else {
-      showPanel(`<div class="sp-mark miss">×</div><h2>Didn't reach ${esc(peer.name)}</h2>
-        <p class="muted">Their app may be closed or offline. Try again, or send the link.</p>
-        <div class="sp-acts"><button class="big" data-p="again" data-id="${esc(peer.id)}">Try again</button><button class="ghost big" data-p="share">Send the link</button></div>`)
-    }
+    return ok ? 'sent' : 'failed'
   }
-  panel.addEventListener('click', (e) => {
-    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-p]')
-    if (!b) return
-    e.stopPropagation()
-    const p = b.dataset.p
-    if (p === 'done') return closeOverlay()
-    hidePanel()
-    if (p === 'again') {
-      const el = peerEls().find((x) => x.dataset.id === b.dataset.id)
-      if (el) sendTo(el, true)
-    }
-    if (p === 'share') doShare()
-  })
+
+  const sendTo = async (el: HTMLElement) => {
+    const peer = relay.peers.find((p) => p.id === el.dataset.id)
+    if (!peer) return
+    if (sendState.get(peer.id) === 'sending') return
+    if (sendState.get(peer.id) === 'sent') return flash(`Already sent to ${peer.name}`, 'info')
+    const r = await deliver(peer)
+    if (r === 'sent') navigator.vibrate?.([15, 40, 15]), flash(`Sent to ${peer.name}`)
+    else if (r === 'failed') flash(`Didn't reach ${peer.name}`, 'miss')
+  }
+
+  const sendAll = async () => {
+    const todo = relay.peers.filter((p) => sendState.get(p.id) !== 'sent' && sendState.get(p.id) !== 'sending')
+    if (!todo.length) return flash('Everyone around already has it', 'info')
+    const res = await Promise.all(todo.map((p) => deliver(p).then((r) => [p, r] as const)))
+    const ok = res.filter(([, r]) => r === 'sent').map(([p]) => p)
+    const miss = res.filter(([, r]) => r === 'failed').map(([p]) => p)
+    if (ok.length) navigator.vibrate?.([15, 40, 15])
+    flash(ok.length ? `Sent to ${names(ok)}${miss.length ? ` · missed ${names(miss)}` : ''}` : `Didn't reach ${names(miss)}`, ok.length ? 'ok' : 'miss')
+  }
 
   attachFling(
     hand,
     (dir: Vec) => {
-      if (stage.classList.contains('done')) return
       const target = pickTarget(hand, peerEls(), dir)
       if (target) sendTo(target)
       else doShare()
@@ -1161,6 +1156,7 @@ async function openFling(l: List) {
         .catch((err) => logGateway('web-share', err.name === 'AbortError' ? 'cancelled' : err.message, false))
       return
     }
+    if (a === 'all') return sendAll()
     if (a === 'poke') return openPoke(toast)
     if (a === 'code') {
       const box = $('.codebox', stage)

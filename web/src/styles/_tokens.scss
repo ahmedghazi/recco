@@ -81,6 +81,7 @@
   /* read by the JS */
   --arrive-duration: 1400ms; /* one received card falling in */
   --arrive-stagger: 280ms; /* delay between received cards */
+  --flash-duration: 2500ms; /* "Sent to Tom" flash on the Send screen */
   --banner-duration: 1400ms; /* "Tom sent you" banner on screen */
   --hold-delay: 280ms; /* press time before the hold-to-send arc opens */
   --trail-frames: 3; /* pile trail: frames of lag between two cards */

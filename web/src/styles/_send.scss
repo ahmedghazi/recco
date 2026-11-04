@@ -43,13 +43,12 @@
 .qr[hidden] { display: none; }
 .qr img { width: min(80vw, 25rem); image-rendering: pixelated; }
 
-// after a send: a clear "Sent to Tom", covering the pile so it can't be flicked again by reflex
-.sent-panel { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 1.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom)); text-align: center; animation: fade var(--t-fast); }
-.sent-panel[hidden] { display: none; }
-.sent-panel h2 { margin: 0; font-size: var(--fs-h2); font-weight: var(--fw-title); color: var(--strong); }
-.sent-panel p { margin: 0; max-width: 22rem; }
-.sp-mark { width: 5.5rem; height: 5.5rem; border-radius: 50%; display: grid; place-items: center; background: var(--green); color: var(--on-accent); font-size: 2.75rem; animation: sp-pop 0.5s var(--ease-spring); }
-.sp-mark.miss { background: none; color: var(--danger); border: 0.125rem solid var(--danger); }
-.sp-acts { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; justify-content: center; }
-.stage.done .hand, .stage.done .hint { visibility: hidden; }
-@keyframes sp-pop { from { transform: scale(0.3); opacity: 0; } }
+// after a send: a flash on top of the card, "Sent to Tom", then it fades
+.flash { position: fixed; left: 50%; z-index: 3; transform: translate(-50%, 0.5rem) scale(0.9); opacity: 0; pointer-events: none; max-width: calc(100% - 2rem); padding: 0.625rem 1.125rem; border-radius: var(--r-pill); background: var(--green); color: var(--on-accent); font-size: var(--fs-l); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow-bubble); transition: opacity var(--t-mid), transform var(--t-mid) var(--ease-out); }
+.flash::before { content: '✓ '; }
+.flash.on { opacity: 1; transform: translate(-50%, 0) scale(1); transition: opacity var(--t-fast), transform var(--t-mid) var(--ease-spring); }
+.flash.miss { background: var(--danger); }
+.flash.miss::before { content: '× '; }
+.flash.info { background: var(--strong); }
+.sendall { color: var(--green); font-weight: var(--fw-bold); }
+.sendall[hidden] { display: none; }
