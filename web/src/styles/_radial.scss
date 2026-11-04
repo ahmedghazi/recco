@@ -1,4 +1,4 @@
-// Hold-to-send arc
+// radial: Hold-to-send arc (radial.ts): bubbles around the finger, the hot one filled.
 
 /* hold-to-send arc */
 .radial { position: fixed; inset: 0; z-index: 70; background: color-mix(in srgb, var(--bg) 55%, transparent); backdrop-filter: blur(0.125rem); -webkit-backdrop-filter: blur(0.125rem); animation: fade .12s; touch-action: none; }

@@ -1,4 +1,4 @@
-// Search, filter chips, sort
+// toolbar: Search, chips and sort; the Saved "Filters" dropdown (details/summary).
 
 .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
 .toolbar input[type=search] { flex: 1 1 8rem; width: auto; min-width: 0; }

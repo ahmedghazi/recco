@@ -1,4 +1,4 @@
-// Lists (channels) and the list page
+// lists: Lists screen and a list page (top N, add titles).
 
 #newList { margin-bottom: 1.25rem; }
 .lists { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--list-min), 1fr)); gap: 1.5rem 1rem; }

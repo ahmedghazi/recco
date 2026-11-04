@@ -1,4 +1,4 @@
-// Inputs, selects, buttons
+// controls: Inputs, selects and buttons: one shared height (--control-h) so controls side by side line up; Collect page sections.
 
 input, textarea, select, button { font: inherit; color: inherit; }
 input, textarea, select { width: 100%; background: var(--bg); border: 0.0625rem solid var(--rule); border-radius: var(--r); padding: 0.5625rem 0.625rem; outline: none; -webkit-appearance: none; appearance: none; font-size: var(--fs-input); }

@@ -1,3 +1,10 @@
+/**
+ * tmdb.ts: The Movie Database API (films and series).
+ *
+ * Token: Settings (per device), else VITE_TMDB_TOKEN baked into the build (it is public in the
+ * bundle by design, read-only key). search(), findImdb() (IMDb id → title), details(),
+ * fullDetails() (one call with videos, images, credits, providers, external ids), poster().
+ */
 import { state, type Details, type TmdbMedia as Media, type Title, titleKey } from './store'
 
 const API = 'https://api.themoviedb.org/3'

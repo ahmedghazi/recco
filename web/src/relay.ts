@@ -1,4 +1,15 @@
-// Client side of the relay: presence ("around") + sending hands to someone nearby.
+/**
+ * relay.ts: client side of the relay (server/relay.mjs), over one WebSocket.
+ *
+ * - presence: who's "around" (same network, friends online anywhere, same 4-letter code)
+ * - send(): push a payload to someone; resolves true once their app confirms delivery
+ * - acks: "Tom kept it" notices; poke(): report a phone knock (see poke.ts)
+ *
+ * Relay URL: Settings value, else VITE_RELAY_URL, else wss://recco-relay.fly.dev when deployed,
+ * ws://<host>:8787 locally. Typos like "ss://" are normalised.
+ * Reconnects with jittered backoff; the people list survives short drops so "around" doesn't blink.
+ * addFriend() stores someone met via poke / code so you see each other anywhere afterwards.
+ */
 import { state, save } from './store'
 import type { Payload } from './share'
 

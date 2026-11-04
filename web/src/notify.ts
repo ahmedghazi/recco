@@ -1,10 +1,14 @@
+/**
+ * notify.ts: overlays and "something arrived" signals.
+ *
+ * - pushOverlay()/closeOverlay(): full-screen layers (Send, Poke, sheets) stack on top of each
+ *   other; the phone's back gesture closes only the top one (one history entry per overlay).
+ * - banner() + chime(): in-app "Tom sent you…" slide-down with a soft sound and vibration.
+ * - askNotify()/systemNotify(): system notifications when the app is in the background
+ *   (on iPhone only once the app is on the home screen).
+ */
 import { token } from './tokens'
 
-// Overlays that close with the phone's back gesture, and "something arrived" signals:
-// an in-app banner + soft chime + vibration, and a system notification when the app is in the background.
-
-// ---------- back gesture closes overlays ----------
-// Overlays stack (e.g. Poke opened from the Send screen); back closes the top one only.
 const closers: (() => void)[] = []
 let after: (() => void) | null = null
 

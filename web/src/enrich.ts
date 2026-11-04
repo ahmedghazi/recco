@@ -1,4 +1,12 @@
-// Title page extras: TMDB details for films/series, players + artwork for everything else.
+/**
+ * enrich.ts: everything the title page shows beyond the basics, fetched once and cached on the item.
+ *
+ * - films / series: TMDB details (synopsis, trailer, images, cast, where to watch) + OMDb ratings
+ *   (IMDb, Rotten Tomatoes, Metacritic) for the global score.
+ * - everything else (music, podcasts, videos…): oEmbed title + artwork, and an embedded player.
+ * playerFor() maps a link to its embed (YouTube nocookie, Spotify, Deezer, Apple, SoundCloud, Vimeo).
+ * Cached in item.details with a version (v) so a format change refetches.
+ */
 import { isTmdbMedia, save, type LibItem } from './store'
 import { fullDetails, hasTmdb } from './tmdb'
 import { hasOmdb, omdbRatings } from './omdb'

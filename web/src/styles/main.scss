@@ -1,4 +1,6 @@
-// Recco styles — Are.na-inspired. Tokens first, then one partial per area of the app.
+// main.scss: entry for all styles (imported by main.ts). Are.na-inspired, one font, black & white
+// with a green accent. Order: tokens (CSS variables: change the look there), base, then one
+// partial per area of the app. Sizes are rem (1rem = 16px).
 @use 'tokens';
 @use 'base';
 @use 'header';

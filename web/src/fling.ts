@@ -1,8 +1,16 @@
+/**
+ * fling.ts: the physical feel of sending.
+ *
+ * - attachFling(): lift the pile, aim (onAim highlights who you're pointing at), flick up and it
+ *   flies off in that direction; a short drag eases back (ease-out cubic). onDrag lets main.ts
+ *   make the rest of the pile trail behind.
+ * - pickTarget(): which person the flick was aimed at (closest angle from the pile).
+ * - flyIn(): receiver side, a card falling in from the top (--arrive-duration).
+ *
+ * Gotcha: the share-sheet fallback must run inside pointerup (browsers require a user gesture),
+ * so onFling is called synchronously and the animation plays alongside.
+ */
 import { token } from './tokens'
-
-// Drag-and-fling: lift the hand, aim, flick, it flies off in that direction.
-// The share sheet fallback must be called inside pointerup (user activation),
-// so `onFling` runs synchronously and the animation plays alongside.
 
 export interface Vec { x: number; y: number }
 

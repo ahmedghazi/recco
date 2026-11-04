@@ -1,4 +1,4 @@
-// Bottom sheets, toasts, onboarding
+// sheets: Bottom sheets ("around" sheet, pickers), toasts, onboarding.
 
 .sheet { position: fixed; inset: 0; z-index: 30; background: var(--scrim); display: flex; align-items: flex-end; }
 .sheet-card { width: 100%; background: var(--bg); border-radius: var(--r-sheet) 0.75rem 0 0; padding: 1.125rem 1rem calc(1.125rem + env(safe-area-inset-bottom)); }

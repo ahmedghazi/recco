@@ -1,4 +1,9 @@
-// IMDb, Rotten Tomatoes and Metacritic scores, via OMDb (free key: omdbapi.com/apikey.aspx).
+/**
+ * omdb.ts: IMDb, Rotten Tomatoes and Metacritic scores via OMDb.
+ *
+ * Key: Settings, else VITE_OMDB_KEY (free key at omdbapi.com). omdbRatings() normalises each score
+ * to /10; globalScore() averages what's available into the one number shown on cards and blocks.
+ */
 import { state, type Rating } from './store'
 
 const key = () => (state.omdbKey || (import.meta.env.VITE_OMDB_KEY as string | undefined) || '').trim()

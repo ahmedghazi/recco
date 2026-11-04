@@ -1,4 +1,4 @@
-// Send screen: around row, pile, QR
+// send: Send screen (openFling in main.ts): people around (aimed person grows, --aim-scale), the pile, "Sent to Tom" flash, Send to all, QR.
 
 .stage { position: fixed; inset: 0; z-index: 20; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 0 1rem calc(1rem + env(safe-area-inset-bottom)); touch-action: none; overflow: hidden; animation: fade var(--t-fast); }
 .stage-top { align-self: stretch; display: grid; grid-template-columns: 1fr auto auto; gap: 1rem; align-items: center; padding: calc(0.75rem + env(safe-area-inset-top)) 0 0.75rem; border-bottom: 0.0625rem solid var(--line); font-size: var(--fs-m); }

@@ -1,5 +1,13 @@
-// Poke to connect: touch phones together (like clinking glasses). Each phone feels the shock,
-// tells the relay "now!", and the relay pairs the two shocks that land in the same instant.
+/**
+ * poke.ts: Poke to connect, for meeting someone who already has the app.
+ *
+ * Both open Poke and knock their phones together. Each phone feels the shock (devicemotion,
+ * threshold --poke-threshold, live meter to tune it) and tells the relay "now!"; the relay pairs
+ * two knocks within ~0.7 s and both screens ask "Connect with Léa?". Connect = addFriend().
+ * iPhone asks for motion permission: openPoke() must be called directly inside the tap.
+ * Phones without sensors get a "tap at the same moment" button.
+ * (New people don't need this: they scan the QR code, open the list, install.)
+ */
 import { relay, addFriend } from './relay'
 import { closeOverlay, pushOverlay } from './notify'
 import { token } from './tokens'

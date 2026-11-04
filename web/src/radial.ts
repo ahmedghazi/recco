@@ -1,7 +1,11 @@
+/**
+ * radial.ts: Tumblr-style hold-to-send.
+ *
+ * Hold a Send button (--hold-delay): destinations pop out in an arc around the finger
+ * (people around, Share, Copy link…); slide onto one and let go. A short tap still behaves like
+ * a normal click, so the same button opens the Send screen. Used by wireRadial() in main.ts.
+ */
 import { token } from './tokens'
-
-// Tumblr-style hold-to-share: hold a button, destinations pop out in an arc around the finger,
-// slide onto one and let go. A short tap still behaves like a normal click.
 
 export interface RadialItem {
   id: string

@@ -1,4 +1,11 @@
-// Turn anything people share (a link, a share-sheet text blob, a CSV row) into a Title.
+/**
+ * resolve.ts: turns anything people paste or share into a Title.
+ *
+ * Handles IMDb / Letterboxd / TMDB links, Spotify, Apple Podcasts, Deezer, YouTube, SoundCloud,
+ * book and article links, share-sheet text blobs ("Watch Past Lives on…") and plain
+ * "Title (2023)" lines. parseShared() works out what it is; resolve() looks films and series up
+ * on TMDB and returns the best match plus alternatives.
+ */
 import { isTmdbMedia, mediaLabel, type Media, type Title, titleKey } from './store'
 import { details, findImdb, hasTmdb, search } from './tmdb'
 

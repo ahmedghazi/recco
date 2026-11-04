@@ -1,5 +1,14 @@
-// Local-first store. Everything lives in localStorage for this test build.
-
+/**
+ * store.ts: the data model and local persistence.
+ *
+ * Everything lives in localStorage under 'recco:v1' (migrated from 'bicrave:v1'):
+ * me, library (saved titles keyed by titleKey), lists, friends, visibility, API keys, gateway log.
+ * Not synced anywhere yet: clearing the browser clears the library (Supabase sync is on the roadmap).
+ *
+ * Main exports: state, save() (persists + notifies onChange listeners), addToLibrary() (merges
+ * duplicates and the "who told me" recos), libraryList(), titleKey(), MEDIA / mediaLabel(), logGateway().
+ * Types: Title, LibItem, Reco, List, Details, Rating, Friend, Media.
+ */
 export type TmdbMedia = 'movie' | 'tv'
 export type Media = TmdbMedia | 'podcast' | 'music' | 'video' | 'book' | 'article' | 'other'
 

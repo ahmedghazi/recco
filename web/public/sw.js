@@ -1,4 +1,9 @@
-// Minimal offline cache: app shell + TMDB posters. Bump VERSION to force refresh.
+/**
+ * sw.js: service worker. Makes the app installable and usable offline.
+ * - page loads: network first (always the latest deploy), cache as fallback when offline
+ * - app files and TMDB posters: served from cache, refreshed in the background
+ * Bump VERSION to drop old caches. Also opens the app when a notification is tapped.
+ */
 const VERSION = 'recco-v3'
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(['./', './manifest.webmanifest'])))

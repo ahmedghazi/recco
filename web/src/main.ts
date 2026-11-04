@@ -1,3 +1,24 @@
+/**
+ * main.ts: the whole UI. Screens, the Send stage and the router, in one file on purpose
+ * (no framework: each screen renders an HTML string into #app, then wires its listeners).
+ *
+ * Sections, in order:
+ *   helpers ............ $, esc, toast, the card (cardHtml) every screen reuses
+ *   entry gateways ..... share target, bookmarklet, file launch: how titles get INTO the app
+ *   screens ............ shell (header + burger menu), Collect, Saved (filters, grid/column), Lists
+ *   install ............ one-tap install on Android/desktop, guided steps on iPhone (in Settings)
+ *   title page ......... one title: details, ratings, trailer/player, images, Send
+ *   the fling stage .... Send screen: people around, the pile you flick, flash "Sent to Tom",
+ *                        Send to all, Poke / Code / QR / Share / Copy link fallbacks
+ *   hold-to-send ....... the Tumblr-style arc on every Send button (see radial.ts)
+ *   receiving .......... a received link/file: cards fall in, Save all
+ *   incoming over air .. hands pushed by the relay while the app is open
+ *   gateways ........... Settings: name, visibility, keys, relay URL, diagnostics log
+ *   router ............. hash routes (#/inbox, #/collect, #/t/<key>, #/lists, #/l/<id>…);
+ *                        home = Saved if anything is saved, else Collect
+ *
+ * Data lives in store.ts (state + save), sending in share.ts / relay.ts, motion in fling.ts.
+ */
 import './styles/main.scss'
 import { APP_NAME } from './config'
 import { addToLibrary, isTmdbMedia, libraryList, logGateway, MEDIA, mediaLabel, now, onChange, save, state, uid, type LibItem, type List, type Media, type Title } from './store'

@@ -1,5 +1,9 @@
-// Letterboxd and IMDb CSV exports → rows we can resolve.
-
+/**
+ * csv.ts: import from Letterboxd and IMDb exports (Collect → Import CSV).
+ *
+ * parseCsv() is a small quote-aware parser; detectAndMap() recognises which service the file came
+ * from and maps its columns to rows (title, year, imdb id, Letterboxd slug, rating…) for resolve.ts.
+ */
 export interface CsvRow {
   title: string
   year?: number

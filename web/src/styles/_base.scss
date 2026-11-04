@@ -1,4 +1,4 @@
-// Base: reset, page, type, keyframes
+// base: Base: reset, page background, type scale, shared keyframes (fade, blink, nudge…).
 
 * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
 /* the root stays at the browser default (16px) so 1rem = 16px everywhere; the body text size is set on body */

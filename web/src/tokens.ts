@@ -1,4 +1,9 @@
-// Read a number from theme.css (e.g. "1400ms", ".3s", "3"), so timings can be tuned there.
+/**
+ * tokens.ts: lets the JS read design tokens from styles/_tokens.scss.
+ *
+ * token('--arrive-duration', 1400) returns a number: "1400ms" → 1400, ".3s" → 300, "22" → 22.
+ * So timings and thresholds (hold delay, trail lag, poke threshold…) are tuned in CSS, in one place.
+ */
 export function token(name: string, fallback: number): number {
   try {
     const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim()

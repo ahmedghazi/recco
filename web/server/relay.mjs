@@ -1,9 +1,16 @@
-// Tiny relay: finds who's around and forwards hands. No database, nothing stored.
-// Run: node server/relay.mjs   (PORT env, default 8787)
-//
-// "Around" = people on the same network (same public IP, or same /24 on a LAN)
-//          + friends online anywhere
-//          + people who typed the same 4-letter code.
+/**
+ * relay.mjs: the tiny relay server (Node + ws). No database, nothing stored, everything in memory.
+ * Run locally: node server/relay.mjs (PORT, default 8787). Deployed on Fly as "recco-relay"
+ * (see Dockerfile, fly.toml; deploy with: fly deploy --ha=false --remote-only).
+ *
+ * What it does:
+ * - presence, "around" = people on the same network (same public IP, IPv6 /64, or LAN /24)
+ *                        + friends online anywhere + people who typed the same 4-letter code
+ * - forwards hands (send) and delivery / "kept" acks between apps
+ * - pairs pokes: two phones reporting a knock within POKE_WINDOW are matched
+ * One person can be connected several times (tab + installed app): they count as one peer
+ * and all their connections receive. Network ids are salted hashes, never raw IPs.
+ */
 import { WebSocketServer } from 'ws'
 import { createHash } from 'node:crypto'
 import http from 'node:http'

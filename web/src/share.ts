@@ -1,4 +1,15 @@
-// Share payloads travel inside the link itself (no backend needed for the test).
+/**
+ * share.ts: turns a list (or a single title) into something that travels.
+ *
+ * The payload is compressed into the link itself (#/r/<channel>/<data>), so a QR code, a copied link,
+ * the phone's share sheet or a .recco.json file all carry the titles with no server involved.
+ * The same Payload is what relay.ts pushes to someone around.
+ *
+ * Main exports: buildPayload(), encode()/decode(), shareUrl(), qrDataUrl(), payloadFile(),
+ * support (what this browser can do: Web Share, sharing files).
+ * Payload fields are one-letter on purpose (t title, y year, m media, i imdb, p poster,
+ * s score, n note, o origin…) to keep links and QR codes short.
+ */
 import QRCode from 'qrcode'
 import { state, type List, type Media } from './store'
 
