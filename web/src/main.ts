@@ -32,6 +32,7 @@ import { askNotify, banner, closeOverlay, notifyState, pushOverlay, systemNotify
 import { enrich, playerFor } from './enrich'
 import { attachRadial, type RadialItem } from './radial'
 import { openPoke } from './poke'
+import { leaveCode, openCodeSheet } from './code'
 import { token } from './tokens'
 import { globalScore, hasOmdb } from './omdb'
 
@@ -1051,7 +1052,6 @@ async function openFling(l: List) {
     })
     .reverse()
     .join('')
-  const myCode = Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('')
   const stage = document.createElement('div')
   stage.className = 'stage'
   stage.innerHTML = `
@@ -1059,10 +1059,6 @@ async function openFling(l: List) {
     <div class="around">
       <div class="around-head"><span>Around</span><span class="around-acts"><button class="codebtn sendall" data-a="all" hidden>Send to all</button><button class="codebtn" data-a="poke">Poke</button><button class="codebtn" data-a="code">Code</button></span></div>
       <div class="peers" id="peers"></div>
-      <div class="codebox" hidden>
-        <span>Your code <b>${myCode}</b></span>
-        <input id="codeIn" maxlength="4" placeholder="or theirs" autocapitalize="characters" autocomplete="off">
-      </div>
     </div>
     <div class="hand" id="deal">${cards}</div>
     <div class="flash" id="flash" role="status" aria-live="polite"></div>
@@ -1186,19 +1182,10 @@ async function openFling(l: List) {
 
   const close = () => {
     unsub()
-    relay.setCode(null)
+    leaveCode()
     stage.remove()
   }
   pushOverlay(close)
-
-  $('#codeIn', stage).addEventListener('input', (e) => {
-    const v = (e.target as HTMLInputElement).value.toUpperCase().replace(/[^A-Z]/g, '')
-    ;(e.target as HTMLInputElement).value = v
-    if (v.length === 4) {
-      relay.setCode(v)
-      logGateway('code', `joined ${v}`)
-    }
-  })
 
   stage.addEventListener('click', async (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('button')
@@ -1216,12 +1203,7 @@ async function openFling(l: List) {
     }
     if (a === 'all') return sendAll()
     if (a === 'poke') return openPoke(toast)
-    if (a === 'code') {
-      const box = $('.codebox', stage)
-      box.hidden = !box.hidden
-      relay.setCode(box.hidden ? null : myCode)
-      if (!box.hidden) logGateway('code', `showing ${myCode}`)
-    }
+    if (a === 'code') return openCodeSheet()
     if (a === 'copy') {
       await navigator.clipboard?.writeText(await shareUrl(l, 'link'))
       toast('Link copied')

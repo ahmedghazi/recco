@@ -12,3 +12,17 @@
 .toast.out { opacity: 0; }
 .hero { padding-top: 14vh; }
 .hero h2 { font-size: var(--fs-h1); max-width: 16ch; }
+
+// Connect with a code (code.ts): your code to read out, or type your friend's
+.code-sheet { z-index: 46; }
+.cs-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; color: var(--strong); }
+.cs-x { background: none; border: 0; padding: 0; color: var(--fg); font-size: var(--fs-m); }
+.cs-part { display: grid; grid-template-columns: auto 1fr; gap: 0.75rem; align-items: start; }
+.cs-n { width: 1.5rem; height: 1.5rem; border-radius: 50%; display: grid; place-items: center; border: var(--border) solid var(--rule); font-size: var(--fs-xs); color: var(--mid); margin-top: 0.125rem; }
+.cs-h { font-size: var(--fs-s); color: var(--mid); margin-bottom: 0.25rem; }
+.cs-code { font-family: var(--mono); font-size: 2.5rem; letter-spacing: 0.3em; color: var(--strong); line-height: 1.1; margin-bottom: 0.25rem; }
+.cs-input { font-family: var(--mono); font-size: 2rem !important; letter-spacing: 0.3em; text-transform: uppercase; width: 100%; max-width: 12rem; padding: 0.25rem 0.5rem; margin-bottom: 0.25rem; }
+.cs-or { display: flex; align-items: center; gap: 0.75rem; margin: 1rem 0; color: var(--mid); font-size: var(--fs-xs); }
+.cs-or::before, .cs-or::after { content: ''; flex: 1; border-top: var(--border) solid var(--line); }
+.cs-status { margin-top: 1.25rem; min-height: 1.4em; font-size: var(--fs-m); color: var(--mid); }
+.cs-status.ok { color: var(--green); }
