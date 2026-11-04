@@ -473,12 +473,15 @@ function blockHtml(i: LibItem) {
 
 /** Saved filter: things I collected myself (nobody sent them). */
 const MINE = '~mine'
+const ALL = '~all'
 
 function renderInbox() {
   const items = libraryList()
   const people = [...new Set(items.flatMap((i) => i.recos.map((r) => r.from)))]
   const types = MEDIA.filter((m) => items.some((i) => (i.media || 'movie') === m.id))
-  const from = decodeURIComponent(route()[1] || '')
+  // Mine by default (unless I haven't collected anything myself yet); Everyone has its own route
+  const picked = decodeURIComponent(route()[1] || '')
+  const from = picked === ALL ? '' : picked || (people.length && items.some((i) => !i.recos.length) ? MINE : '')
   const ask = notifyState() === 'default' && Object.keys(state.friends).length > 0
   shell('inbox', `
     ${ask ? `<div class="notify-ask"><span>Get a notification when a friend sends you something.</span><button class="sm" id="notifyOn">Turn on</button></div>` : ''}
@@ -493,7 +496,7 @@ function renderInbox() {
       ${types.length > 1 ? `<div class="chips" id="types"><button data-type="" class="${savedView.type ? '' : 'on'}">All types</button>${types
         .map((m) => `<button data-type="${m.id}" class="${savedView.type === m.id ? 'on' : ''}">${m.label}</button>`)
         .join('')}</div>` : ''}
-      ${people.length ? `<div class="chips" id="from"><a href="#/inbox" class="${from ? '' : 'on'}">Everyone</a><a href="#/inbox/${MINE}" class="${from === MINE ? 'on' : ''}">Mine</a>${people
+      ${people.length ? `<div class="chips" id="from"><a href="#/inbox/${MINE}" class="${from === MINE ? 'on' : ''}">Mine</a><a href="#/inbox/${ALL}" class="${from ? '' : 'on'}">Everyone</a>${people
         .map((p) => `<a href="#/inbox/${encodeURIComponent(p)}" class="${from === p ? 'on' : ''}">${esc(p)}</a>`)
         .join('')}</div>` : ''}
       <p class="count" id="count"></p>
