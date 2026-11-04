@@ -440,7 +440,14 @@ async function importCsv(f: File) {
 }
 
 // Saved: an Are.na-style grid of blocks, with search, type filter and sort
-const savedView = { q: '', type: '' as '' | Media, sort: 'recent' as 'recent' | 'rating' | 'title' | 'year' | 'from' }
+const savedView = { q: '', type: '' as '' | Media, sort: 'recent' as 'recent' | 'rating' | 'title' | 'year' | 'from', layout: readLayout() }
+
+/** Saved layout: grid (2 per line) or column (1 per line, Instagram-style). Remembered on this phone. */
+function readLayout(): 'grid' | 'col' {
+  try { return localStorage.getItem('recco:layout') === 'col' ? 'col' : 'grid' } catch { return 'grid' }
+}
+const ICON_GRID = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></svg>'
+const ICON_COL = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1" width="14" height="10"/><rect x="1" y="13" width="14" height="2"/></svg>'
 
 function sortItems(items: LibItem[], sort: string) {
   const by = {
@@ -492,6 +499,9 @@ function renderInbox() {
         <select id="sort" aria-label="Sort">
           <option value="recent">Recent</option><option value="rating">Rating</option><option value="title">Title</option><option value="year">Year</option><option value="from">From</option>
         </select>
+        <span class="layout" id="layout" role="group" aria-label="View">
+          <button data-layout="grid" class="${savedView.layout === 'grid' ? 'on' : ''}" aria-label="Grid, 2 per line" aria-pressed="${savedView.layout === 'grid'}">${ICON_GRID}</button><button data-layout="col" class="${savedView.layout === 'col' ? 'on' : ''}" aria-label="Column, 1 per line" aria-pressed="${savedView.layout === 'col'}">${ICON_COL}</button>
+        </span>
       </div>
       ${types.length > 1 ? `<div class="chips" id="types"><button data-type="" class="${savedView.type ? '' : 'on'}">All types</button>${types
         .map((m) => `<button data-type="${m.id}" class="${savedView.type === m.id ? 'on' : ''}">${m.label}</button>`)
@@ -500,7 +510,7 @@ function renderInbox() {
         .map((p) => `<a href="#/inbox/${encodeURIComponent(p)}" class="${from === p ? 'on' : ''}">${esc(p)}</a>`)
         .join('')}</div>` : ''}
       <p class="count" id="count"></p>
-      <div class="blocks" id="blocks"></div>`
+      <div class="blocks is-${savedView.layout}" id="blocks"></div>`
     : '<p class="empty">Nothing saved yet. Collect a few titles, or open something a friend sent you.</p>'}`)
 
   document.getElementById('notifyOn')?.addEventListener('click', async () => {
@@ -529,6 +539,17 @@ function renderInbox() {
     e.preventDefault()
     const i = state.library[b.dataset.send!]
     if (i) openFling({ id: 'single', name: i.title, items: [{ key: i.key, note: i.myNote }], createdAt: now(), single: true })
+  })
+  document.getElementById('layout')!.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-layout]')
+    if (!b) return
+    savedView.layout = b.dataset.layout as 'grid' | 'col'
+    try { localStorage.setItem('recco:layout', savedView.layout) } catch {}
+    $('#blocks').className = `blocks is-${savedView.layout}`
+    document.querySelectorAll<HTMLElement>('#layout [data-layout]').forEach((x) => {
+      x.classList.toggle('on', x === b)
+      x.setAttribute('aria-pressed', String(x === b))
+    })
   })
   const sortEl = $<HTMLSelectElement>('#sort')
   sortEl.value = savedView.sort

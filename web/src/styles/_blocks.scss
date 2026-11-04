@@ -36,6 +36,26 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+// column view: one big block per line, Instagram-style, capped on wide screens
+.blocks.is-col {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: var(--col-max);
+  margin-inline: auto;
+  gap: 2.25rem;
+}
+.blocks.is-col .bt { font-size: var(--fs-l); }
+
+// grid / column switch in the toolbar
+.layout { display: flex; flex: none; }
+.toolbar > .layout > button {
+  width: var(--control-h); height: var(--control-h); padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg); color: var(--mid); border: var(--border) solid var(--rule); border-radius: 0;
+}
+.layout button:first-child { border-radius: var(--r) 0 0 var(--r); }
+.layout button:last-child { border-radius: 0 var(--r) var(--r) 0; border-left: 0; }
+.layout button.on { color: var(--strong); background: var(--soft); }
+.layout svg { width: 1rem; height: 1rem; fill: currentColor; }
 .block {
   text-decoration: none;
   display: flex;
